@@ -1,5 +1,7 @@
 # aho-corasick
-efficient string matching in Golang via the aho-corasick algorithm.
+Efficient string matching in Golang via the aho-corasick algorithm.
+
+x20 faster than https://github.com/cloudflare/ahocorasick and x3 faster than https://github.com/anknown/ahocorasick
 
 This library is heavily inspired by https://github.com/BurntSushi/aho-corasick
 
@@ -7,9 +9,9 @@ This library is heavily inspired by https://github.com/BurntSushi/aho-corasick
 
   ```
     builder := NewAhoCorasickBuilder(Opts{
-		asciiCaseInsensitive: true,
-		matchOnlyWholeWords:  true,
-		matchKind:            LeftMostLongestMatch,
+	    AsciiCaseInsensitive: true,
+        MatchOnlyWholeWords:  true,
+        MatchKind:            LeftMostLongestMatch,
 	})
 
 	ac := builder.Build([]string{"bear", "masha"})

@@ -89,17 +89,17 @@ type AhoCorasickBuilder struct {
 }
 
 type Opts struct {
-	asciiCaseInsensitive bool
-	matchOnlyWholeWords  bool
-	matchKind            matchKind
+	AsciiCaseInsensitive bool
+	MatchOnlyWholeWords  bool
+	MatchKind            matchKind
 }
 
 func NewAhoCorasickBuilder(o Opts) AhoCorasickBuilder {
 	return AhoCorasickBuilder{
 		dfaBuilder:          newDFABuilder(),
-		nfaBuilder:          newNFABuilder(o.matchKind, o.asciiCaseInsensitive),
+		nfaBuilder:          newNFABuilder(o.MatchKind, o.AsciiCaseInsensitive),
 		dfa:                 false,
-		matchOnlyWholeWords: o.matchOnlyWholeWords,
+		matchOnlyWholeWords: o.MatchOnlyWholeWords,
 	}
 }
 
