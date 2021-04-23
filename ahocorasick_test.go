@@ -1,8 +1,39 @@
 package aho_corasick
 
 import (
+	"sync"
 	"testing"
 )
+
+func TestAhoCorasick_Parallel(t *testing.T) {
+	t2 := leftmostInsensitiveWholeWordTestCases[0]
+	builder := NewAhoCorasickBuilder(Opts{
+		AsciiCaseInsensitive: true,
+		MatchOnlyWholeWords:  true,
+		MatchKind:            LeftMostLongestMatch,
+	})
+
+	ac := builder.Build(t2.patterns)
+	var w sync.WaitGroup
+
+	w.Add(50)
+	for i := 0; i < 50; i++ {
+		go func() {
+			ac := ac
+			matches := ac.FindAll(t2.haystack)
+			if len(matches) != len(t2.matches) {
+				t.Errorf("test %v expected %v matches got %v", 0, len(matches), len(t2.matches))
+			}
+			for i, m := range matches {
+				if m != t2.matches[i] {
+					t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
+				}
+			}
+			w.Done()
+		}()
+	}
+	w.Wait()
+}
 
 func TestAhoCorasick_LeftmostInsensitiveWholeWord(t *testing.T) {
 	for i, t2 := range leftmostInsensitiveWholeWordTestCases {
