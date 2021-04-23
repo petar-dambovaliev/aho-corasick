@@ -10,13 +10,13 @@ type startBytesThree struct {
 	byte3 byte
 }
 
-func (s startBytesThree) NextCandidate(_ *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (s startBytesThree) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b || s.byte2 == b || s.byte3 == b {
-			return at + i, PossibleStartOfMatchCandidate
+			return at + i, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (s startBytesThree) HeapBytes() int {
@@ -44,13 +44,13 @@ type startBytesTwo struct {
 	byte2 byte
 }
 
-func (s startBytesTwo) NextCandidate(_ *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (s startBytesTwo) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b || s.byte2 == b {
-			return at + i, PossibleStartOfMatchCandidate
+			return at + i, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (s startBytesTwo) HeapBytes() int {
@@ -77,13 +77,13 @@ type startBytesOne struct {
 	byte1 byte
 }
 
-func (s startBytesOne) NextCandidate(_ *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (s startBytesOne) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b {
-			return at + i, PossibleStartOfMatchCandidate
+			return at + i, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (s startBytesOne) HeapBytes() int {
@@ -134,7 +134,7 @@ func (r *rareByteOffsets) set(b byte, off rareByteOffset) {
 type prefilterBuilder struct {
 	count                int
 	asciiCaseInsensitive bool
-	startBytes           StartBytesBuilder
+	startBytes           startBytesBuilder
 	rareBytes            rareBytesBuilder
 }
 
@@ -192,7 +192,7 @@ type rareBytesOne struct {
 	offset rareByteOffset
 }
 
-func (r rareBytesOne) NextCandidate(state *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (r rareBytesOne) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b {
 			pos := at + i
@@ -205,10 +205,10 @@ func (r rareBytesOne) NextCandidate(state *PrefilterState, haystack []byte, at i
 			if at > r {
 				r = at
 			}
-			return r, PossibleStartOfMatchCandidate
+			return r, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (r rareBytesOne) HeapBytes() int {
@@ -237,7 +237,7 @@ type rareBytesTwo struct {
 	byte2   byte
 }
 
-func (r rareBytesTwo) NextCandidate(state *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (r rareBytesTwo) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b || r.byte2 == b {
 			pos := at + i
@@ -250,10 +250,10 @@ func (r rareBytesTwo) NextCandidate(state *PrefilterState, haystack []byte, at i
 			if at > r {
 				r = at
 			}
-			return r, PossibleStartOfMatchCandidate
+			return r, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (r rareBytesTwo) HeapBytes() int {
@@ -283,7 +283,7 @@ type rareBytesThree struct {
 	byte3   byte
 }
 
-func (r rareBytesThree) NextCandidate(state *PrefilterState, haystack []byte, at int) (interface{}, CandidateType) {
+func (r rareBytesThree) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b || r.byte2 == b || r.byte3 == b {
 			pos := at + i
@@ -296,10 +296,10 @@ func (r rareBytesThree) NextCandidate(state *PrefilterState, haystack []byte, at
 			if at > r {
 				r = at
 			}
-			return r, PossibleStartOfMatchCandidate
+			return r, possibleStartOfMatchCandidate
 		}
 	}
-	return nil, NoneCandidate
+	return nil, noneCandidate
 }
 
 func (r rareBytesThree) HeapBytes() int {
@@ -446,14 +446,14 @@ func newRareBytesBuilder(asciiCaseInsensitive bool) rareBytesBuilder {
 	}
 }
 
-type StartBytesBuilder struct {
+type startBytesBuilder struct {
 	asciiCaseInsensitive bool
 	byteset              []bool
 	count                int
 	rankSum              uint16
 }
 
-func (s *StartBytesBuilder) build() prefilter {
+func (s *startBytesBuilder) build() prefilter {
 	if s.count > 3 {
 		return nil
 	}
@@ -493,7 +493,7 @@ func (s *StartBytesBuilder) build() prefilter {
 	}
 }
 
-func (s *StartBytesBuilder) add(bytes []byte) {
+func (s *startBytesBuilder) add(bytes []byte) {
 	if s.count > 3 || len(bytes) == 0 {
 		return
 	}
@@ -506,7 +506,7 @@ func (s *StartBytesBuilder) add(bytes []byte) {
 	}
 }
 
-func (s *StartBytesBuilder) addOneByte(b byte) {
+func (s *startBytesBuilder) addOneByte(b byte) {
 	if !s.byteset[int(b)] {
 		s.byteset[int(b)] = true
 		s.count += 1
@@ -518,8 +518,8 @@ func freqRank(b byte) byte {
 	return byteFrequencies[int(b)]
 }
 
-func newStartBytesBuilder(asciiCaseInsensitive bool) StartBytesBuilder {
-	return StartBytesBuilder{
+func newStartBytesBuilder(asciiCaseInsensitive bool) startBytesBuilder {
+	return startBytesBuilder{
 		asciiCaseInsensitive: asciiCaseInsensitive,
 		byteset:              make([]bool, 256),
 		count:                0,
@@ -527,10 +527,10 @@ func newStartBytesBuilder(asciiCaseInsensitive bool) StartBytesBuilder {
 	}
 }
 
-const MinSkips int = 40
-const MinAvgFactor int = 2
+const minSkips int = 40
+const minAvgFactor int = 2
 
-type PrefilterState struct {
+type prefilterState struct {
 	skips       int
 	skipped     int
 	maxMatchLen int
@@ -538,22 +538,22 @@ type PrefilterState struct {
 	lastScanAt  int
 }
 
-func (p *PrefilterState) updateAt(at int) {
+func (p *prefilterState) updateAt(at int) {
 	if at > p.lastScanAt {
 		p.lastScanAt = at
 	}
 }
 
-func (p *PrefilterState) IsEffective(at int) bool {
+func (p *prefilterState) IsEffective(at int) bool {
 	if p.inert || at < p.lastScanAt {
 		return false
 	}
 
-	if p.skips < MinSkips {
+	if p.skips < minSkips {
 		return true
 	}
 
-	minAvg := MinAvgFactor * p.maxMatchLen
+	minAvg := minAvgFactor * p.maxMatchLen
 
 	if p.skipped >= minAvg*p.skips {
 		return true
@@ -563,37 +563,37 @@ func (p *PrefilterState) IsEffective(at int) bool {
 	return false
 }
 
-func (p *PrefilterState) updateSkippedBytes(skipped int) {
+func (p *prefilterState) updateSkippedBytes(skipped int) {
 	p.skips += 1
 	p.skipped += skipped
 }
 
-type CandidateType uint
+type candidateType uint
 
 const (
-	NoneCandidate CandidateType = iota
-	MatchCandidate
-	PossibleStartOfMatchCandidate
+	noneCandidate candidateType = iota
+	matchCandidate
+	possibleStartOfMatchCandidate
 )
 
 type prefilter interface {
-	NextCandidate(state *PrefilterState, haystack []byte, at int) (interface{}, CandidateType)
+	NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType)
 	HeapBytes() int
 	ReportsFalsePositives() bool
 	LooksForNonStartOfMatch() bool
 	clone() prefilter
 }
 
-func nextPrefilter(state *PrefilterState, prefilter prefilter, haystack []byte, at int) (interface{}, CandidateType) {
+func nextPrefilter(state *prefilterState, prefilter prefilter, haystack []byte, at int) (interface{}, candidateType) {
 	cand, ttype := prefilter.NextCandidate(state, haystack, at)
 
 	switch ttype {
-	case NoneCandidate:
+	case noneCandidate:
 		state.updateSkippedBytes(len(haystack) - at)
-	case MatchCandidate:
+	case matchCandidate:
 		m := cand.(*Match)
 		state.updateSkippedBytes(m.Start() - at)
-	case PossibleStartOfMatchCandidate:
+	case possibleStartOfMatchCandidate:
 		i := cand.(int)
 		state.updateSkippedBytes(i - at)
 	}

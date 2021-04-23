@@ -6,7 +6,7 @@ import (
 
 type findIter struct {
 	fsm                 imp
-	prestate            *PrefilterState
+	prestate            *prefilterState
 	haystack            []byte
 	pos                 int
 	matchOnlyWholeWords bool
@@ -39,7 +39,7 @@ type AhoCorasick struct {
 }
 
 func (ac AhoCorasick) findIter(haystack string) findIter {
-	prestate := &PrefilterState{
+	prestate := &prefilterState{
 		skips:       0,
 		skipped:     0,
 		maxMatchLen: ac.i.MaxPatternLen(),
@@ -122,9 +122,9 @@ type imp interface {
 	PatternCount() int
 	Prefilter() prefilter
 	UsePrefilter() bool
-	OverlappingFindAt(prestate *PrefilterState, haystack []byte, at int, state_id *stateID, match_index *int) *Match
-	EarliestFindAt(prestate *PrefilterState, haystack []byte, at int, state_id *stateID) *Match
-	FindAtNoState(prestate *PrefilterState, haystack []byte, at int) *Match
+	OverlappingFindAt(prestate *prefilterState, haystack []byte, at int, state_id *stateID, match_index *int) *Match
+	EarliestFindAt(prestate *prefilterState, haystack []byte, at int, state_id *stateID) *Match
+	FindAtNoState(prestate *prefilterState, haystack []byte, at int) *Match
 }
 
 type matchKind int

@@ -13,16 +13,16 @@ type automaton interface {
 	MatchCount(stateID) int
 	NextState(stateID, byte) stateID
 	NextStateNoFail(stateID, byte) stateID
-	StandardFindAt(*PrefilterState, []byte, int, *stateID) *Match
-	StandardFindAtImp(*PrefilterState, prefilter, []byte, int, *stateID) *Match
-	LeftmostFindAt(*PrefilterState, []byte, int, *stateID) *Match
-	LeftmostFindAtImp(*PrefilterState, prefilter, []byte, int, *stateID) *Match
-	LeftmostFindAtNoState(*PrefilterState, []byte, int) *Match
-	LeftmostFindAtNoStateImp(*PrefilterState, prefilter, []byte, int) *Match
-	OverlappingFindAt(*PrefilterState, []byte, int, *stateID, *int) *Match
-	EarliestFindAt(*PrefilterState, []byte, int, *stateID) *Match
-	FindAt(*PrefilterState, []byte, int, *stateID) *Match
-	FindAtNoState(*PrefilterState, []byte, int) *Match
+	StandardFindAt(*prefilterState, []byte, int, *stateID) *Match
+	StandardFindAtImp(*prefilterState, prefilter, []byte, int, *stateID) *Match
+	LeftmostFindAt(*prefilterState, []byte, int, *stateID) *Match
+	LeftmostFindAtImp(*prefilterState, prefilter, []byte, int, *stateID) *Match
+	LeftmostFindAtNoState(*prefilterState, []byte, int) *Match
+	LeftmostFindAtNoStateImp(*prefilterState, prefilter, []byte, int) *Match
+	OverlappingFindAt(*prefilterState, []byte, int, *stateID, *int) *Match
+	EarliestFindAt(*prefilterState, []byte, int, *stateID) *Match
+	FindAt(*prefilterState, []byte, int, *stateID) *Match
+	FindAtNoState(*prefilterState, []byte, int) *Match
 }
 
 func isMatchOrDeadState(a automaton, si stateID) bool {
@@ -37,21 +37,21 @@ func nextStateNoFail(a automaton, cur stateID, input byte) stateID {
 	return next
 }
 
-func standardFindAt(a automaton, prestate *PrefilterState, haystack []byte, at int, sID *stateID) *Match {
+func standardFindAt(a automaton, prestate *prefilterState, haystack []byte, at int, sID *stateID) *Match {
 	pre := a.Prefilter()
 	return a.StandardFindAtImp(prestate, pre, haystack, at, sID)
 }
 
-func standardFindAtImp(a automaton, prestate *PrefilterState, prefilter prefilter, haystack []byte, at int, sID *stateID) *Match {
+func standardFindAtImp(a automaton, prestate *prefilterState, prefilter prefilter, haystack []byte, at int, sID *stateID) *Match {
 	for at < len(haystack) {
 		if prefilter != nil {
 			startState := a.StartState()
 			if prestate.IsEffective(at) && sID == &startState {
 				c, ttype := nextPrefilter(prestate, prefilter, haystack, at)
 				switch ttype {
-				case NoneCandidate:
+				case noneCandidate:
 					return nil
-				case PossibleStartOfMatchCandidate:
+				case possibleStartOfMatchCandidate:
 					i := c.(int)
 					at = i
 				}
@@ -71,12 +71,12 @@ func standardFindAtImp(a automaton, prestate *PrefilterState, prefilter prefilte
 	return nil
 }
 
-func leftmostFindAt(a automaton, prestate *PrefilterState, haystack []byte, at int, sID *stateID) *Match {
+func leftmostFindAt(a automaton, prestate *prefilterState, haystack []byte, at int, sID *stateID) *Match {
 	prefilter := a.Prefilter()
 	return a.LeftmostFindAtImp(prestate, prefilter, haystack, at, sID)
 }
 
-func leftmostFindAtImp(a automaton, prestate *PrefilterState, prefilter prefilter, haystack []byte, at int, sID *stateID) *Match {
+func leftmostFindAtImp(a automaton, prestate *prefilterState, prefilter prefilter, haystack []byte, at int, sID *stateID) *Match {
 	if a.Anchored() && at > 0 && *sID == a.StartState() {
 		return nil
 	}
@@ -88,9 +88,9 @@ func leftmostFindAtImp(a automaton, prestate *PrefilterState, prefilter prefilte
 			if prestate.IsEffective(at) && sID == &startState {
 				c, ttype := nextPrefilter(prestate, prefilter, haystack, at)
 				switch ttype {
-				case NoneCandidate:
+				case noneCandidate:
 					return nil
-				case PossibleStartOfMatchCandidate:
+				case possibleStartOfMatchCandidate:
 					i := c.(int)
 					at = i
 				}
@@ -112,20 +112,20 @@ func leftmostFindAtImp(a automaton, prestate *PrefilterState, prefilter prefilte
 	return lastMatch
 }
 
-func leftmostFindAtNoState(a automaton, prestate *PrefilterState, haystack []byte, at int) *Match {
+func leftmostFindAtNoState(a automaton, prestate *prefilterState, haystack []byte, at int) *Match {
 	return leftmostFindAtNoStateImp(a, prestate, a.Prefilter(), haystack, at)
 }
 
-func leftmostFindAtNoStateImp(a automaton, prestate *PrefilterState, prefilter prefilter, haystack []byte, at int) *Match {
+func leftmostFindAtNoStateImp(a automaton, prestate *prefilterState, prefilter prefilter, haystack []byte, at int) *Match {
 	if a.Anchored() && at > 0 {
 		return nil
 	}
 	if prefilter != nil && !prefilter.ReportsFalsePositives() {
 		c, ttype := prefilter.NextCandidate(prestate, haystack, at)
 		switch ttype {
-		case NoneCandidate:
+		case noneCandidate:
 			return nil
-		case MatchCandidate:
+		case matchCandidate:
 			m := c.(*Match)
 			return m
 		}
@@ -138,12 +138,12 @@ func leftmostFindAtNoStateImp(a automaton, prestate *PrefilterState, prefilter p
 		if prefilter != nil && prestate.IsEffective(at) && stateID == a.StartState() {
 			c, ttype := prefilter.NextCandidate(prestate, haystack, at)
 			switch ttype {
-			case NoneCandidate:
+			case noneCandidate:
 				return nil
-			case MatchCandidate:
+			case matchCandidate:
 				m := c.(*Match)
 				return m
-			case PossibleStartOfMatchCandidate:
+			case possibleStartOfMatchCandidate:
 				i := c.(int)
 				at = i
 			}
@@ -163,7 +163,7 @@ func leftmostFindAtNoStateImp(a automaton, prestate *PrefilterState, prefilter p
 	return lastMatch
 }
 
-func overlappingFindAt(a automaton, prestate *PrefilterState, haystack []byte, at int, id *stateID, matchIndex *int) *Match {
+func overlappingFindAt(a automaton, prestate *prefilterState, haystack []byte, at int, id *stateID, matchIndex *int) *Match {
 	if a.Anchored() && at > 0 && *id == a.StartState() {
 		return nil
 	}
@@ -187,7 +187,7 @@ func overlappingFindAt(a automaton, prestate *PrefilterState, haystack []byte, a
 	return match
 }
 
-func earliestFindAt(a automaton, prestate *PrefilterState, haystack []byte, at int, id *stateID) *Match {
+func earliestFindAt(a automaton, prestate *prefilterState, haystack []byte, at int, id *stateID) *Match {
 	if *id == a.StartState() {
 		if a.Anchored() && at > 0 {
 			return nil
@@ -200,7 +200,7 @@ func earliestFindAt(a automaton, prestate *PrefilterState, haystack []byte, at i
 	return a.StandardFindAt(prestate, haystack, at, id)
 }
 
-func findAt(a automaton, prestate *PrefilterState, haystack []byte, at int, id *stateID) *Match {
+func findAt(a automaton, prestate *prefilterState, haystack []byte, at int, id *stateID) *Match {
 	kind := a.MatchKind()
 	if kind == nil {
 		return nil
@@ -214,7 +214,7 @@ func findAt(a automaton, prestate *PrefilterState, haystack []byte, at int, id *
 	return nil
 }
 
-func findAtNoState(a automaton, prestate *PrefilterState, haystack []byte, at int) *Match {
+func findAtNoState(a automaton, prestate *prefilterState, haystack []byte, at int) *Match {
 	kind := a.MatchKind()
 	if kind == nil {
 		return nil

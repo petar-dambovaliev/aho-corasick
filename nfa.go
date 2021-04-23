@@ -17,7 +17,7 @@ type iNFA struct {
 	states        []state
 }
 
-func (n *iNFA) FindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (n *iNFA) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return findAtNoState(n, prefilterState, bytes, i)
 }
 
@@ -72,39 +72,39 @@ func (n *iNFA) NextStateNoFail(id stateID, b byte) stateID {
 	return nextStateNoFail(n, id, b)
 }
 
-func (n *iNFA) StandardFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAt(n, prefilterState, bytes, i, id)
 }
 
-func (n *iNFA) StandardFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) StandardFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAtImp(n, prefilterState, prefilter, bytes, i, id)
 }
 
-func (n *iNFA) LeftmostFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) LeftmostFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAt(n, prefilterState, bytes, i, id)
 }
 
-func (n *iNFA) LeftmostFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) LeftmostFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAtImp(n, prefilterState, prefilter, bytes, i, id)
 }
 
-func (n *iNFA) LeftmostFindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (n *iNFA) LeftmostFindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return leftmostFindAtNoState(n, prefilterState, bytes, i)
 }
 
-func (n *iNFA) LeftmostFindAtNoStateImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int) *Match {
+func (n *iNFA) LeftmostFindAtNoStateImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int) *Match {
 	return leftmostFindAtNoStateImp(n, prefilterState, prefilter, bytes, i)
 }
 
-func (n *iNFA) OverlappingFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
+func (n *iNFA) OverlappingFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
 	return overlappingFindAt(n, prefilterState, bytes, i, id, i2)
 }
 
-func (n *iNFA) EarliestFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) EarliestFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return earliestFindAt(n, prefilterState, bytes, i, id)
 }
 
-func (n *iNFA) FindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (n *iNFA) FindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return findAt(n, prefilterState, bytes, i, id)
 }
 

@@ -36,19 +36,19 @@ func (d iDFA) UsePrefilter() bool {
 	return !p.LooksForNonStartOfMatch()
 }
 
-func (d iDFA) OverlappingFindAt(prestate *PrefilterState, haystack []byte, at int, state_id *stateID, match_index *int) *Match {
+func (d iDFA) OverlappingFindAt(prestate *prefilterState, haystack []byte, at int, state_id *stateID, match_index *int) *Match {
 	return overlappingFindAt(d.atom, prestate, haystack, at, state_id, match_index)
 }
 
-func (d iDFA) EarliestFindAt(prestate *PrefilterState, haystack []byte, at int, state_id *stateID) *Match {
+func (d iDFA) EarliestFindAt(prestate *prefilterState, haystack []byte, at int, state_id *stateID) *Match {
 	return earliestFindAt(d.atom, prestate, haystack, at, state_id)
 }
 
-func (d iDFA) FindAtNoState(prestate *PrefilterState, haystack []byte, at int) *Match {
+func (d iDFA) FindAtNoState(prestate *prefilterState, haystack []byte, at int) *Match {
 	return findAtNoState(d.atom, prestate, haystack, at)
 }
 
-func (n iDFA) LeftmostFindAtNoState(prestate *PrefilterState, haystack []byte, at int) *Match {
+func (n iDFA) LeftmostFindAtNoState(prestate *prefilterState, haystack []byte, at int) *Match {
 	return leftmostFindAtNoState(n.atom, prestate, haystack, at)
 }
 
@@ -121,7 +121,7 @@ type iByteClass struct {
 	repr iRepr
 }
 
-func (p iByteClass) FindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iByteClass) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return findAtNoState(p, prefilterState, bytes, i)
 }
 
@@ -176,39 +176,39 @@ func (p iByteClass) NextStateNoFail(id stateID, b byte) stateID {
 	return nextStateNoFail(&p, id, b)
 }
 
-func (p iByteClass) StandardFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iByteClass) StandardFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) StandardFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iByteClass) LeftmostFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) LeftmostFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iByteClass) LeftmostFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) LeftmostFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iByteClass) LeftmostFindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iByteClass) LeftmostFindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return leftmostFindAtNoState(&p, prefilterState, bytes, i)
 }
 
-func (p iByteClass) LeftmostFindAtNoStateImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int) *Match {
+func (p iByteClass) LeftmostFindAtNoStateImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int) *Match {
 	return leftmostFindAtNoStateImp(&p, prefilterState, prefilter, bytes, i)
 }
 
-func (p iByteClass) OverlappingFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
+func (p iByteClass) OverlappingFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
 	return overlappingFindAt(&p, prefilterState, bytes, i, id, i2)
 }
 
-func (p iByteClass) EarliestFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) EarliestFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return earliestFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iByteClass) FindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iByteClass) FindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return findAt(&p, prefilterState, bytes, i, id)
 }
 
@@ -216,7 +216,7 @@ type iPremultipliedByteClass struct {
 	repr iRepr
 }
 
-func (p iPremultipliedByteClass) FindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iPremultipliedByteClass) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return findAtNoState(p, prefilterState, bytes, i)
 }
 
@@ -280,39 +280,39 @@ func (p iPremultipliedByteClass) NextStateNoFail(id stateID, b byte) stateID {
 	return nextStateNoFail(&p, id, b)
 }
 
-func (p iPremultipliedByteClass) StandardFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultipliedByteClass) StandardFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) StandardFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iPremultipliedByteClass) LeftmostFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) LeftmostFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultipliedByteClass) LeftmostFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) LeftmostFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iPremultipliedByteClass) LeftmostFindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iPremultipliedByteClass) LeftmostFindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return leftmostFindAtNoState(&p, prefilterState, bytes, i)
 }
 
-func (p iPremultipliedByteClass) LeftmostFindAtNoStateImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int) *Match {
+func (p iPremultipliedByteClass) LeftmostFindAtNoStateImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int) *Match {
 	return leftmostFindAtNoStateImp(&p, prefilterState, prefilter, bytes, i)
 }
 
-func (p iPremultipliedByteClass) OverlappingFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
+func (p iPremultipliedByteClass) OverlappingFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
 	return overlappingFindAt(&p, prefilterState, bytes, i, id, i2)
 }
 
-func (p iPremultipliedByteClass) EarliestFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) EarliestFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return earliestFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultipliedByteClass) FindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultipliedByteClass) FindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return findAt(&p, prefilterState, bytes, i, id)
 }
 
@@ -320,7 +320,7 @@ type iPremultiplied struct {
 	repr iRepr
 }
 
-func (p iPremultiplied) FindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iPremultiplied) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return findAtNoState(p, prefilterState, bytes, i)
 }
 
@@ -381,39 +381,39 @@ func (p iPremultiplied) NextStateNoFail(id stateID, b byte) stateID {
 	return nextStateNoFail(&p, id, b)
 }
 
-func (p iPremultiplied) StandardFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultiplied) StandardFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) StandardFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iPremultiplied) LeftmostFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) LeftmostFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultiplied) LeftmostFindAtImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) LeftmostFindAtImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAtImp(&p, prefilterState, prefilter, bytes, i, id)
 }
 
-func (p iPremultiplied) LeftmostFindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iPremultiplied) LeftmostFindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return leftmostFindAtNoState(&p, prefilterState, bytes, i)
 }
 
-func (p iPremultiplied) LeftmostFindAtNoStateImp(prefilterState *PrefilterState, prefilter prefilter, bytes []byte, i int) *Match {
+func (p iPremultiplied) LeftmostFindAtNoStateImp(prefilterState *prefilterState, prefilter prefilter, bytes []byte, i int) *Match {
 	return leftmostFindAtNoStateImp(&p, prefilterState, prefilter, bytes, i)
 }
 
-func (p iPremultiplied) OverlappingFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
+func (p iPremultiplied) OverlappingFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
 	return overlappingFindAt(&p, prefilterState, bytes, i, id, i2)
 }
 
-func (p iPremultiplied) EarliestFindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) EarliestFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return earliestFindAt(&p, prefilterState, bytes, i, id)
 }
 
-func (p iPremultiplied) FindAt(prefilterState *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (p iPremultiplied) FindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return findAt(&p, prefilterState, bytes, i, id)
 }
 
@@ -443,7 +443,7 @@ type iStandard struct {
 	repr iRepr
 }
 
-func (p iStandard) FindAtNoState(prefilterState *PrefilterState, bytes []byte, i int) *Match {
+func (p iStandard) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
 	return findAtNoState(&p, prefilterState, bytes, i)
 }
 
@@ -496,39 +496,39 @@ func (s *iStandard) NextStateNoFail(id stateID, b byte) stateID {
 	return nextStateNoFail(s, id, b)
 }
 
-func (s *iStandard) StandardFindAt(state *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) StandardFindAt(state *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAt(s, state, bytes, i, id)
 }
 
-func (s *iStandard) StandardFindAtImp(state *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) StandardFindAtImp(state *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return standardFindAtImp(s, state, prefilter, bytes, i, id)
 }
 
-func (s *iStandard) LeftmostFindAt(state *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) LeftmostFindAt(state *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAt(s, state, bytes, i, id)
 }
 
-func (s *iStandard) LeftmostFindAtImp(state *PrefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) LeftmostFindAtImp(state *prefilterState, prefilter prefilter, bytes []byte, i int, id *stateID) *Match {
 	return leftmostFindAtImp(s, state, prefilter, bytes, i, id)
 }
 
-func (s *iStandard) LeftmostFindAtNoState(state *PrefilterState, bytes []byte, i int) *Match {
+func (s *iStandard) LeftmostFindAtNoState(state *prefilterState, bytes []byte, i int) *Match {
 	return leftmostFindAtNoState(s, state, bytes, i)
 }
 
-func (s *iStandard) LeftmostFindAtNoStateImp(state *PrefilterState, prefilter prefilter, bytes []byte, i int) *Match {
+func (s *iStandard) LeftmostFindAtNoStateImp(state *prefilterState, prefilter prefilter, bytes []byte, i int) *Match {
 	return leftmostFindAtNoStateImp(s, state, prefilter, bytes, i)
 }
 
-func (s *iStandard) OverlappingFindAt(state *PrefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
+func (s *iStandard) OverlappingFindAt(state *prefilterState, bytes []byte, i int, id *stateID, i2 *int) *Match {
 	return overlappingFindAt(s, state, bytes, i, id, i2)
 }
 
-func (s *iStandard) EarliestFindAt(state *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) EarliestFindAt(state *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return earliestFindAt(s, state, bytes, i, id)
 }
 
-func (s *iStandard) FindAt(state *PrefilterState, bytes []byte, i int, id *stateID) *Match {
+func (s *iStandard) FindAt(state *prefilterState, bytes []byte, i int, id *stateID) *Match {
 	return findAt(s, state, bytes, i, id)
 }
 
