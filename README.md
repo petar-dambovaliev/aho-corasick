@@ -8,19 +8,36 @@ This library is heavily inspired by https://github.com/BurntSushi/aho-corasick
 ## Usage
 
   ```go
-    builder := NewAhoCorasickBuilder(Opts{
-	    AsciiCaseInsensitive: true,
-        MatchOnlyWholeWords:  true,
-        MatchKind:            LeftMostLongestMatch,
-	})
+builder := NewAhoCorasickBuilder(Opts{
+    AsciiCaseInsensitive: true,
+    MatchOnlyWholeWords:  true,
+    MatchKind:            LeftMostLongestMatch,
+})
 
-	ac := builder.Build([]string{"bear", "masha"})
-	haystack := "The Bear and Masha"
-	matches := ac.FindAll(haystack)
+ac := builder.Build([]string{"bear", "masha"})
+haystack := "The Bear and Masha"
+matches := ac.FindAll(haystack)
 
-	for _, match := range matches {
-		println(haystack[match.Start():match.End()])
-	}
+for _, match := range matches {
+    println(haystack[match.Start():match.End()])
+}
+```
+
+Search for matches one at a time via the iterator
+
+```go
+builder := NewAhoCorasickBuilder(Opts{
+    AsciiCaseInsensitive: true,
+    MatchOnlyWholeWords:  true,
+    MatchKind:            LeftMostLongestMatch,
+})
+
+ac := builder.Build(t2.patterns)
+iter := ac.Iter(t2.haystack)
+
+for next := iter.Next(); next != nil; next = iter.Next() {
+    ...
+}
 ```
 
 It's plenty fast but if you want to use it in parallel, that is also possible.
@@ -30,30 +47,30 @@ Memory consumption won't increase because the read-only automaton is not actuall
 The magic line is `ac := ac`
 
 ```go
-    builder := NewAhoCorasickBuilder(Opts{
-		AsciiCaseInsensitive: true,
-		MatchOnlyWholeWords:  true,
-		MatchKind:            LeftMostLongestMatch,
-	})
+builder := NewAhoCorasickBuilder(Opts{
+    AsciiCaseInsensitive: true,
+    MatchOnlyWholeWords:  true,
+    MatchKind:            LeftMostLongestMatch,
+})
 
-	ac := builder.Build(t2.patterns)
-	var w sync.WaitGroup
+ac := builder.Build(t2.patterns)
+var w sync.WaitGroup
 
-	w.Add(50)
-	for i := 0; i < 50; i++ {
-		go func() {
-			ac := ac
-			matches := ac.FindAll(t2.haystack)
-			if len(matches) != len(t2.matches) {
-				t.Errorf("test %v expected %v matches got %v", 0, len(matches), len(t2.matches))
-			}
-			for i, m := range matches {
-				if m != t2.matches[i] {
-					t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
-				}
-			}
-			w.Done()
-		}()
-	}
-	w.Wait()
+w.Add(50)
+for i := 0; i < 50; i++ {
+    go func() {
+        ac := ac
+        matches := ac.FindAll(t2.haystack)
+        if len(matches) != len(t2.matches) {
+            t.Errorf("test %v expected %v matches got %v", 0, len(matches), len(t2.matches))
+        }
+        for i, m := range matches {
+            if m != t2.matches[i] {
+                t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
+            }
+        }
+        w.Done()
+    }()
+}
+w.Wait()
 ```

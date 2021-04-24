@@ -1,8 +1,6 @@
 package aho_corasick
 
-import (
-	"unicode"
-)
+import "unicode"
 
 type findIter struct {
 	fsm                 imp
@@ -12,7 +10,11 @@ type findIter struct {
 	matchOnlyWholeWords bool
 }
 
-func (f *findIter) next() *Match {
+type Iter interface {
+	Next() *Match
+}
+
+func (f *findIter) Next() *Match {
 	if f.pos > len(f.haystack) {
 		return nil
 	}
@@ -29,6 +31,15 @@ func (f *findIter) next() *Match {
 		f.pos = result.end
 	}
 
+	if f.matchOnlyWholeWords {
+		if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
+			return f.Next()
+		}
+		if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
+			return f.Next()
+		}
+	}
+
 	return result
 }
 
@@ -38,7 +49,7 @@ type AhoCorasick struct {
 	matchOnlyWholeWords bool
 }
 
-func (ac AhoCorasick) findIter(haystack string) findIter {
+func (ac AhoCorasick) Iter(haystack string) Iter {
 	prestate := &prefilterState{
 		skips:       0,
 		skipped:     0,
@@ -47,7 +58,7 @@ func (ac AhoCorasick) findIter(haystack string) findIter {
 		lastScanAt:  0,
 	}
 
-	return findIter{
+	return &findIter{
 		fsm:                 ac.i,
 		prestate:            prestate,
 		haystack:            []byte(haystack),
@@ -57,22 +68,13 @@ func (ac AhoCorasick) findIter(haystack string) findIter {
 }
 
 func (ac AhoCorasick) FindAll(haystack string) []Match {
-	iter := ac.findIter(haystack)
+	iter := ac.Iter(haystack)
 	matches := make([]Match, 0)
 
 	for {
-		next := iter.next()
+		next := iter.Next()
 		if next == nil {
 			break
-		}
-
-		if ac.matchOnlyWholeWords {
-			if next.Start()-1 >= 0 && (unicode.IsLetter(rune(haystack[next.Start()-1])) || unicode.IsDigit(rune(haystack[next.Start()-1]))) {
-				continue
-			}
-			if next.end < len(haystack) && (unicode.IsLetter(rune(haystack[next.end])) || unicode.IsDigit(rune(haystack[next.end]))) {
-				continue
-			}
 		}
 
 		matches = append(matches, *next)

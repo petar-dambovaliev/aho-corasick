@@ -5,6 +5,33 @@ import (
 	"testing"
 )
 
+func TestAhoCorasick_Iter(t *testing.T) {
+	for i, t2 := range leftmostInsensitiveWholeWordTestCases {
+		builder := NewAhoCorasickBuilder(Opts{
+			AsciiCaseInsensitive: true,
+			MatchOnlyWholeWords:  true,
+			MatchKind:            LeftMostLongestMatch,
+		})
+
+		ac := builder.Build(t2.patterns)
+		iter := ac.Iter(t2.haystack)
+		matches := make([]Match, 0)
+
+		for next := iter.Next(); next != nil; next = iter.Next() {
+			matches = append(matches, *next)
+		}
+
+		if len(matches) != len(t2.matches) {
+			t.Errorf("test %v expected %v matches got %v", i, len(matches), len(t2.matches))
+		}
+		for i, m := range matches {
+			if m != t2.matches[i] {
+				t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
+			}
+		}
+	}
+}
+
 func TestAhoCorasick_Parallel(t *testing.T) {
 	t2 := leftmostInsensitiveWholeWordTestCases[0]
 	builder := NewAhoCorasickBuilder(Opts{
