@@ -1,6 +1,9 @@
 package aho_corasick
 
-import "unicode"
+import (
+	"strings"
+	"unicode"
+)
 
 type findIter struct {
 	fsm                 imp
@@ -65,6 +68,57 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 		pos:                 0,
 		matchOnlyWholeWords: ac.matchOnlyWholeWords,
 	}
+}
+
+func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) string) string {
+	matches := ac.FindAll(haystack)
+
+	if len(matches) == 0 {
+		return haystack
+	}
+
+	replaceWith := make([]string, 0)
+
+	for _, match := range matches {
+		replaceWith = append(replaceWith, f(match))
+	}
+
+	diff := calcDiffSize(matches, replaceWith)
+
+	var str strings.Builder
+	str.Grow(len(haystack) + diff)
+
+	start := 0
+
+	for _, match := range matches {
+		str.WriteString(haystack[start:match.Start()])
+		str.WriteString(replaceWith[match.Pattern()])
+		start = match.Start() + match.len
+	}
+
+	if start-1 < len(haystack) {
+		str.WriteString(haystack[start:])
+	}
+
+	return str.String()
+}
+
+func (ac AhoCorasick) ReplaceAll(haystack string, replaceWith []string) string {
+	if len(replaceWith) != ac.i.PatternCount() {
+		panic("replaceWith needs to have the same length as the pattern count")
+	}
+
+	return ac.ReplaceAllFunc(haystack, func(match Match) string {
+		return replaceWith[match.pattern]
+	})
+}
+
+func calcDiffSize(matches []Match, replaceWith []string) int {
+	var diff int
+	for _, match := range matches {
+		diff += len(replaceWith[match.pattern]) - match.len
+	}
+	return diff
 }
 
 func (ac AhoCorasick) FindAll(haystack string) []Match {
@@ -164,7 +218,7 @@ type Match struct {
 }
 
 func (m *Match) Pattern() int {
-	return m.Pattern()
+	return m.pattern
 }
 
 func (m *Match) End() int {
