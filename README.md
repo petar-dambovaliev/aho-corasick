@@ -31,10 +31,10 @@ replaced := ac.ReplaceAll(haystack, replaceWith)
 ```
 
 `ReplaceAllFunc` is useful, for example, if you want to use the original text cassing but you are matching
-case insensitively.
+case insensitively. You can replace partially by return false and from that point, the original string will be preserved.
 ```go
-replaced := ac.ReplaceAllFunc(haystack, func(match Match) string {
-    return `<a>` + haystack[match.Start():match.End()] + `<\a>`
+replaced := ac.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
+    return `<a>` + haystack[match.Start():match.End()] + `<\a>`, true
 })
 ```
 

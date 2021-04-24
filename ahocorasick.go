@@ -70,7 +70,7 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 	}
 }
 
-func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) string) string {
+func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (string, bool)) string {
 	matches := ac.FindAll(haystack)
 
 	if len(matches) == 0 {
@@ -80,7 +80,11 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) string
 	replaceWith := make([]string, 0)
 
 	for _, match := range matches {
-		replaceWith = append(replaceWith, f(match))
+		rw, ok := f(match)
+		if !ok {
+			break
+		}
+		replaceWith = append(replaceWith, rw)
 	}
 
 	diff := calcDiffSize(matches, replaceWith)
@@ -91,6 +95,10 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) string
 	start := 0
 
 	for _, match := range matches {
+		if match.Pattern() >= len(replaceWith) {
+			str.WriteString(haystack[start:])
+			return str.String()
+		}
 		str.WriteString(haystack[start:match.Start()])
 		str.WriteString(replaceWith[match.Pattern()])
 		start = match.Start() + match.len
@@ -108,14 +116,17 @@ func (ac AhoCorasick) ReplaceAll(haystack string, replaceWith []string) string {
 		panic("replaceWith needs to have the same length as the pattern count")
 	}
 
-	return ac.ReplaceAllFunc(haystack, func(match Match) string {
-		return replaceWith[match.pattern]
+	return ac.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
+		return replaceWith[match.pattern], true
 	})
 }
 
 func calcDiffSize(matches []Match, replaceWith []string) int {
 	var diff int
 	for _, match := range matches {
+		if match.Pattern() >= len(replaceWith) {
+			return diff
+		}
 		diff += len(replaceWith[match.pattern]) - match.len
 	}
 	return diff
