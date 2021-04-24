@@ -13,10 +13,13 @@ type findIter struct {
 	matchOnlyWholeWords bool
 }
 
+// Iter is an iterator over matches found on the current haystack
+// it gives the user more granular control. You can chose how many and what kind of matches you need.
 type Iter interface {
 	Next() *Match
 }
 
+// Next gives a pointer to the next match yielded by the iterator or nil, if there is none
 func (f *findIter) Next() *Match {
 	if f.pos > len(f.haystack) {
 		return nil
@@ -46,12 +49,14 @@ func (f *findIter) Next() *Match {
 	return result
 }
 
+// AhoCorasick is the main data structure that does most of the work
 type AhoCorasick struct {
 	i                   imp
 	matchKind           matchKind
 	matchOnlyWholeWords bool
 }
 
+// Iter gives an iterator over the built patterns
 func (ac AhoCorasick) Iter(haystack string) Iter {
 	prestate := &prefilterState{
 		skips:       0,
@@ -70,6 +75,10 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 	}
 }
 
+// ReplaceAllFunc replaces the matches found in the haystack according to the user provided function
+// it gives fine grained control over what is replaced.
+// A user can chose to stop the replacing process early by returning false in the lambda
+// In that case, everything from that point will be kept as the original haystack
 func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (string, bool)) string {
 	matches := ac.FindAll(haystack)
 
@@ -111,6 +120,8 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (strin
 	return str.String()
 }
 
+// ReplaceAll replaces the matches found in the haystack according to the user provided slice `replaceWith`
+// It panics, if `replaceWith` has length different from the patterns that it was built with
 func (ac AhoCorasick) ReplaceAll(haystack string, replaceWith []string) string {
 	if len(replaceWith) != ac.i.PatternCount() {
 		panic("replaceWith needs to have the same length as the pattern count")
@@ -132,6 +143,7 @@ func calcDiffSize(matches []Match, replaceWith []string) int {
 	return diff
 }
 
+// FindAll returns the matches found in the haystack
 func (ac AhoCorasick) FindAll(haystack string) []Match {
 	iter := ac.Iter(haystack)
 	matches := make([]Match, 0)
@@ -148,6 +160,7 @@ func (ac AhoCorasick) FindAll(haystack string) []Match {
 	return matches
 }
 
+// AhoCorasickBuilder defines a set of options applied before the patterns are built
 type AhoCorasickBuilder struct {
 	dfaBuilder          *iDFABuilder
 	nfaBuilder          *iNFABuilder
@@ -155,12 +168,14 @@ type AhoCorasickBuilder struct {
 	matchOnlyWholeWords bool
 }
 
+// Opts defines a set of options applied before the patterns are built
 type Opts struct {
 	AsciiCaseInsensitive bool
 	MatchOnlyWholeWords  bool
 	MatchKind            matchKind
 }
 
+// NewAhoCorasickBuilder creates a new AhoCorasickBuilder based on Opts
 func NewAhoCorasickBuilder(o Opts) AhoCorasickBuilder {
 	return AhoCorasickBuilder{
 		dfaBuilder:          newDFABuilder(),
@@ -170,6 +185,7 @@ func NewAhoCorasickBuilder(o Opts) AhoCorasickBuilder {
 	}
 }
 
+// Build builds a (non)deterministic finite automata from the user provided patterns
 func (a *AhoCorasickBuilder) Build(patterns []string) AhoCorasick {
 	nfa := a.nfaBuilder.build(patterns)
 	match_kind := nfa.matchKind
@@ -197,8 +213,17 @@ type imp interface {
 type matchKind int
 
 const (
+	// Use standard match semantics, which support overlapping matches. When
+	// used with non-overlapping matches, matches are reported as they are seen.
 	StandardMatch matchKind = iota
+	// Use leftmost-first match semantics, which reports leftmost matches.
+	// When there are multiple possible leftmost matches, the match
+	// corresponding to the pattern that appeared earlier when constructing
+	// the automaton is reported.
+	// This does **not** support overlapping matches or stream searching
 	LeftMostFirstMatch
+	// Use leftmost-longest match semantics, which reports leftmost matches.
+	// When there are multiple possible leftmost matches, the longest match is chosen.
 	LeftMostLongestMatch
 )
 
@@ -222,20 +247,29 @@ func (m matchKind) isLeftmostFirst() bool {
 	return m == LeftMostFirstMatch
 }
 
+// A representation of a match reported by an Aho-Corasick automaton.
+//
+// A match has two essential pieces of information: the identifier of the
+// pattern that matched, along with the start and end offsets of the match
+// in the haystack.
 type Match struct {
 	pattern int
 	len     int
 	end     int
 }
 
+// Pattern returns the index of the pattern in the slice of the patterns provided by the user that
+// was matched
 func (m *Match) Pattern() int {
 	return m.pattern
 }
 
+// End gives the index of the last character of this match inside the haystack
 func (m *Match) End() int {
 	return m.end
 }
 
+// Start gives the index of the first character of this match inside the haystack
 func (m *Match) Start() int {
 	return m.end - m.len
 }
