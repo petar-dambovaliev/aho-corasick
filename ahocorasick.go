@@ -54,7 +54,6 @@ type overlappingIter struct {
 	prestate            *prefilterState
 	haystack            []byte
 	pos                 int
-	last_match_end      int
 	stateID             stateID
 	matchIndex          int
 	matchOnlyWholeWords bool
@@ -98,10 +97,9 @@ func newOverlappingIter(ac AhoCorasick, haystack string) overlappingIter {
 		prestate:            &prestate,
 		haystack:            []byte(haystack),
 		pos:                 0,
-		last_match_end:      0,
 		stateID:             ac.i.StartState(),
 		matchIndex:          0,
-		matchOnlyWholeWords: false,
+		matchOnlyWholeWords: ac.matchOnlyWholeWords,
 	}
 }
 

@@ -226,8 +226,11 @@ func TestAhoCorasick_IterOverlapping(t *testing.T) {
 	for next := iter.Next(); next != nil; next = iter.Next() {
 		matches = append(matches, *next)
 	}
-	if len(matches) != 2 {
-		t.Errorf("expected 2 matches got %v", len(matches))
+	if len(matches) != 1 {
+		t.Errorf("expected 1 match got %v", len(matches))
+	}
+	if haystack[matches[0].Start():matches[0].End()] != "Vorsichtsmaßnahmen" {
+		t.Errorf("expected `Vorsichtsmaßnahmen` match got %v", haystack[matches[0].Start():matches[0].End()])
 	}
 }
 
