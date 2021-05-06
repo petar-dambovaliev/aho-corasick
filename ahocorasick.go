@@ -166,13 +166,13 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (strin
 
 	start := 0
 
-	for _, match := range matches {
-		if match.Pattern() >= len(replaceWith) {
+	for i, match := range matches {
+		if i >= len(replaceWith) {
 			str.WriteString(haystack[start:])
 			return str.String()
 		}
 		str.WriteString(haystack[start:match.Start()])
-		str.WriteString(replaceWith[match.Pattern()])
+		str.WriteString(replaceWith[i])
 		start = match.Start() + match.len
 	}
 
