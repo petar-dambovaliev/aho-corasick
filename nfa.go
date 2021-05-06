@@ -294,10 +294,8 @@ func (c *compiler) fillFailureTransitionsStandard() {
 		queue = queue[1:]
 		it := newIterTransitions(&c.nfa, id)
 
-		next := it.next()
-		for next != nil {
+		for next := it.next(); next != nil; next = it.next() {
 			if seen.contains(next.id) {
-				next = it.next()
 				continue
 			}
 			queue = append(queue, next.id)
@@ -310,7 +308,6 @@ func (c *compiler) fillFailureTransitionsStandard() {
 			fail = it.nfa.state(fail).nextState(next.key)
 			it.nfa.state(next.id).fail = fail
 			it.nfa.copyMatches(fail, next.id)
-			next = it.next()
 		}
 		it.nfa.copyEmptyMatches(id)
 	}
@@ -385,19 +382,22 @@ func (n *iNFA) copyEmptyMatches(dst stateID) {
 }
 
 func (n *iNFA) copyMatches(src stateID, dst stateID) {
-	if src == dst {
+	srcState, dstState := n.getTwo(src, dst)
+	dstState.matches = append(dstState.matches, srcState.matches...)
+}
+
+func (n *iNFA) getTwo(i stateID, j stateID) (*state, *state) {
+	if i == j {
 		panic("src and dst should not be equal")
 	}
 
-	var srcState, dstState *state
-	if src < dst {
-		srcState = n.state(src)
-		dstState = n.state(dst)
-	} else {
-		srcState = n.state(dst)
-		dstState = n.state(src)
+	if i < j {
+		before, after := n.states[0:j], n.states[j:]
+		return &before[i], &after[0]
 	}
-	dstState.matches = append(dstState.matches, srcState.matches...)
+
+	before, after := n.states[0:i], n.states[i:]
+	return &after[0], &before[j]
 }
 
 func (n *iNFA) iterAllTransitions(byteClasses byteClasses, id stateID, f func(tr *next)) {

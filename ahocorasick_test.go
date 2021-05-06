@@ -211,6 +211,26 @@ func TestAhoCorasick_Parallel(t *testing.T) {
 	w.Wait()
 }
 
+func TestAhoCorasick_IterOverlapping(t *testing.T) {
+	builder := NewAhoCorasickBuilder(Opts{
+		AsciiCaseInsensitive: true,
+		MatchOnlyWholeWords:  true,
+		MatchKind:            StandardMatch,
+	})
+
+	ac := builder.Build([]string{"hinweise und Vorsichtsmaßnahmen", "Vorsichtsmaßnahmen"})
+	haystack := "alle spezifischen Warnhinweise und Vorsichtsmaßnahmen, die mit einem"
+	iter := ac.IterOverlapping(haystack)
+
+	matches := make([]Match, 0)
+	for next := iter.Next(); next != nil; next = iter.Next() {
+		matches = append(matches, *next)
+	}
+	if len(matches) != 2 {
+		t.Errorf("expected 2 matches got %v", len(matches))
+	}
+}
+
 func TestAhoCorasick_LeftmostInsensitiveWholeWord(t *testing.T) {
 	for i, t2 := range leftmostInsensitiveWholeWordTestCases {
 		builder := NewAhoCorasickBuilder(Opts{

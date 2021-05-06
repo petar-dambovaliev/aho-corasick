@@ -49,6 +49,62 @@ func (f *findIter) Next() *Match {
 	return result
 }
 
+type overlappingIter struct {
+	fsm                 imp
+	prestate            *prefilterState
+	haystack            []byte
+	pos                 int
+	last_match_end      int
+	stateID             stateID
+	matchIndex          int
+	matchOnlyWholeWords bool
+}
+
+func (f *overlappingIter) Next() *Match {
+	if f.pos > len(f.haystack) {
+		return nil
+	}
+
+	result := f.fsm.OverlappingFindAt(f.prestate, f.haystack, f.pos, &f.stateID, &f.matchIndex)
+
+	if result == nil {
+		return nil
+	}
+
+	f.pos = result.End()
+
+	if f.matchOnlyWholeWords {
+		if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
+			return f.Next()
+		}
+		if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
+			return f.Next()
+		}
+	}
+
+	return result
+}
+
+func newOverlappingIter(ac AhoCorasick, haystack string) overlappingIter {
+	prestate := prefilterState{
+		skips:       0,
+		skipped:     0,
+		maxMatchLen: ac.i.MaxPatternLen(),
+		inert:       false,
+		lastScanAt:  0,
+	}
+	return overlappingIter{
+		fsm:                 ac.i,
+		prestate:            &prestate,
+		haystack:            []byte(haystack),
+		pos:                 0,
+		last_match_end:      0,
+		stateID:             ac.i.StartState(),
+		matchIndex:          0,
+		matchOnlyWholeWords: false,
+	}
+}
+
 // AhoCorasick is the main data structure that does most of the work
 type AhoCorasick struct {
 	i                   imp
@@ -73,6 +129,15 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 		pos:                 0,
 		matchOnlyWholeWords: ac.matchOnlyWholeWords,
 	}
+}
+
+// Iter gives an iterator over the built patterns with overlapping matches
+func (ac AhoCorasick) IterOverlapping(haystack string) Iter {
+	if ac.matchKind != StandardMatch {
+		panic("only StandardMatch allowed for overlapping matches")
+	}
+	i := newOverlappingIter(ac, haystack)
+	return &i
 }
 
 // ReplaceAllFunc replaces the matches found in the haystack according to the user provided function
