@@ -14,6 +14,7 @@ builder := NewAhoCorasickBuilder(Opts{
     AsciiCaseInsensitive: true,
     MatchOnlyWholeWords:  true,
     MatchKind:            LeftMostLongestMatch,
+    DFA:                  true,
 })
 
 ac := builder.Build([]string{"bear", "masha"})
@@ -24,6 +25,10 @@ for _, match := range matches {
     println(haystack[match.Start():match.End()])
 }
 ```
+
+Matching can be done via `NFA` or `DFA`.
+`NFA` has runtime complexity O(N + M) in relation to the haystack and number of matches.
+`DFA` has runtime complexity O(N), but it uses more memory.
 
 Replacing of matches in the haystack.
 
