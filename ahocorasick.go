@@ -166,10 +166,12 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (strin
 		replaceWith = append(replaceWith, rw)
 	}
 
-	//diff := calcDiffSize(matches, replaceWith)
-
 	str := pool.Get().(strings.Builder)
-	defer pool.Put(str)
+
+	defer func() {
+		str.Reset()
+		pool.Put(str)
+	}()
 
 	start := 0
 
