@@ -72,6 +72,11 @@ func (d *iDFABuilder) build(nfa *iNFA) iDFA {
 	}
 
 	matches := make([][]pattern, len(nfa.states))
+	var p prefilter
+
+	if nfa.prefil != nil {
+		p = nfa.prefil.clone()
+	}
 
 	rep := iRepr{
 		match_kind:      nfa.matchKind,
@@ -83,23 +88,25 @@ func (d *iDFABuilder) build(nfa *iNFA) iDFA {
 		state_count:     len(nfa.states),
 		max_match:       failedStateID,
 		heap_bytes:      0,
-		prefilter:       nfa.prefil.clone(),
+		prefilter:       p,
 		byte_classes:    byteClasses,
 		trans:           trans,
 		matches:         matches,
 	}
 
 	for id := 0; id < len(nfa.states); id += 1 {
-		rep.matches[id] = nfa.states[id].matches
+		rep.matches[id] = append(rep.matches[id], nfa.states[id].matches...)
 		fail := nfa.states[id].fail
 
-		nfa.iterAllTransitions(byteClasses, stateID(id), func(tr *next) {
+		nfa.iterAllTransitions(&byteClasses, stateID(id), func(tr *next) {
 			if tr.id == failedStateID {
-				tr.id = nfaNextStateMemoized(nfa, &rep, stateID(id), &fail, tr.key)
+				tr.id = nfaNextStateMemoized(nfa, &rep, stateID(id), fail, tr.key)
 			}
 			rep.setNextState(stateID(id), tr.key, tr.id)
 		})
+
 	}
+
 	rep.shuffleMatchStates()
 	rep.calculateSize()
 
@@ -167,13 +174,17 @@ func (b iByteClass) MatchCount(id stateID) int {
 
 func (b iByteClass) NextState(id stateID, b2 byte) stateID {
 	alphabet_len := b.repr.byte_classes.alphabetLen()
-	input := b.repr.byte_classes[b2]
+	input := b.repr.byte_classes.bytes[b2]
 	o := int(id)*alphabet_len + int(input)
 	return b.repr.trans[o]
 }
 
 func (p iByteClass) NextStateNoFail(id stateID, b byte) stateID {
-	return nextStateNoFail(&p, id, b)
+	next := p.NextState(id, b)
+	if next == failedStateID {
+		panic("automaton should never return fail_id for next state")
+	}
+	return next
 }
 
 func (p iByteClass) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
@@ -271,13 +282,18 @@ func (p iPremultipliedByteClass) MatchCount(id stateID) int {
 }
 
 func (p iPremultipliedByteClass) NextState(id stateID, b byte) stateID {
-	input := p.repr.byte_classes[b]
+	input := p.repr.byte_classes.bytes[b]
 	o := int(id) + int(input)
 	return p.repr.trans[o]
 }
 
+//todo this leaks garbage
 func (p iPremultipliedByteClass) NextStateNoFail(id stateID, b byte) stateID {
-	return nextStateNoFail(&p, id, b)
+	next := p.NextState(id, b)
+	if next == failedStateID {
+		panic("automaton should never return fail_id for next state")
+	}
+	return next
 }
 
 func (p iPremultipliedByteClass) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
@@ -378,7 +394,11 @@ func (p iPremultiplied) NextState(id stateID, b byte) stateID {
 }
 
 func (p iPremultiplied) NextStateNoFail(id stateID, b byte) stateID {
-	return nextStateNoFail(&p, id, b)
+	next := p.NextState(id, b)
+	if next == failedStateID {
+		panic("automaton should never return fail_id for next state")
+	}
+	return next
 }
 
 func (p iPremultiplied) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
@@ -417,18 +437,18 @@ func (p iPremultiplied) FindAt(prefilterState *prefilterState, bytes []byte, i i
 	return findAt(&p, prefilterState, bytes, i, id)
 }
 
-func nfaNextStateMemoized(nfa *iNFA, dfa *iRepr, populating stateID, current *stateID, input byte) stateID {
+func nfaNextStateMemoized(nfa *iNFA, dfa *iRepr, populating stateID, current stateID, input byte) stateID {
 	for {
-		if *current < populating {
-			return dfa.nextState(*current, input)
+		if current < populating {
+			return dfa.nextState(current, input)
 		}
 
-		next := nfa.states[*current].nextState(input)
+		next := nfa.states[current].nextState(input)
 
 		if next != failedStateID {
 			return next
 		}
-		*current = nfa.states[*current].fail
+		current = nfa.states[current].fail
 	}
 }
 
@@ -493,7 +513,11 @@ func (s *iStandard) NextState(current stateID, input byte) stateID {
 }
 
 func (s *iStandard) NextStateNoFail(id stateID, b byte) stateID {
-	return nextStateNoFail(s, id, b)
+	next := s.NextState(id, b)
+	if next == failedStateID {
+		panic("automaton should never return fail_id for next state")
+	}
+	return next
 }
 
 func (s *iStandard) StandardFindAt(state *prefilterState, bytes []byte, i int, id *stateID) *Match {
@@ -552,7 +576,6 @@ func (r *iRepr) premultiply() {
 	if r.premultiplied || r.state_count <= 1 {
 		return
 	}
-
 	alpha_len := r.alphabetLen()
 
 	for id := 2; id < r.state_count; id++ {
@@ -572,7 +595,7 @@ func (r *iRepr) premultiply() {
 
 func (r *iRepr) setNextState(from stateID, b byte, to stateID) {
 	alphabet_len := r.alphabetLen()
-	b = r.byte_classes[b]
+	b = r.byte_classes.bytes[b]
 	r.trans[int(from)*alphabet_len+int(b)] = to
 }
 
@@ -582,7 +605,7 @@ func (r *iRepr) alphabetLen() int {
 
 func (r *iRepr) nextState(from stateID, b byte) stateID {
 	alphabet_len := r.alphabetLen()
-	b = r.byte_classes[b]
+	b = r.byte_classes.bytes[b]
 	return r.trans[int(from)*alphabet_len+int(b)]
 }
 
@@ -635,12 +658,16 @@ func (r *iRepr) swapStates(id1 stateID, id2 stateID) {
 
 func (r *iRepr) calculateSize() {
 	intSize := int(unsafe.Sizeof(stateID(1)))
-	size := len(r.trans)*intSize + (len(r.matches) * (intSize * 2))
+	size := (len(r.trans) * intSize) + (len(r.matches) * (intSize * 3))
 
 	for _, state_matches := range r.matches {
 		size += len(state_matches) * (intSize * 2)
 	}
-	size += r.prefilter.HeapBytes()
+	var hb int
+	if r.prefilter != nil {
+		hb = r.prefilter.HeapBytes()
+	}
+	size += hb
 	r.heap_bytes = size
 }
 
@@ -678,6 +705,24 @@ func (r *iRepr) shuffleMatchStates() {
 		}
 		cur -= 1
 	}
+
+	for id := 0; id < r.state_count; id++ {
+		alphabet_len := r.alphabetLen()
+		offset := id * alphabet_len
+
+		slice := r.trans[offset : offset+alphabet_len]
+
+		for i := range slice {
+			if swaps[slice[i]] != failedStateID {
+				slice[i] = swaps[slice[i]]
+			}
+		}
+	}
+
+	if swaps[r.start_id] != failedStateID {
+		r.start_id = swaps[r.start_id]
+	}
+	r.max_match = stateID(first_non_match - 1)
 }
 
 type pattern struct {

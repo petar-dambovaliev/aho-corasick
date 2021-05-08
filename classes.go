@@ -1,6 +1,8 @@
 package aho_corasick
 
-import "math"
+import (
+	"math"
+)
 
 type byteClassRepresentatives struct {
 	classes   *byteClasses
@@ -11,11 +13,12 @@ type byteClassRepresentatives struct {
 func (b *byteClassRepresentatives) next() *byte {
 	for b.bbyte < 256 {
 		bbyte := byte(b.bbyte)
-		class := b.classes[bbyte]
+		class := b.classes.bytes[bbyte]
 		b.bbyte += 1
 
-		if b.lastClass != nil && *b.lastClass != class {
-			b.lastClass = &class
+		if b.lastClass == nil || *b.lastClass != class {
+			c := class
+			b.lastClass = &c
 			return &bbyte
 		}
 	}
@@ -36,7 +39,7 @@ func (b byteClassBuilder) build() byteClasses {
 	var class byte
 	i := 0
 	for {
-		classes[byte(i)] = class
+		classes.bytes[byte(i)] = class
 		if i >= 255 {
 			break
 		}
@@ -55,18 +58,20 @@ func newByteClassBuilder() byteClassBuilder {
 	return make([]bool, 256)
 }
 
-type byteClasses [256]byte
+type byteClasses struct {
+	bytes [256]byte
+}
 
 func singletons() byteClasses {
 	var bc byteClasses
-	for i := range bc {
-		bc[i] = byte(i)
+	for i := range bc.bytes {
+		bc.bytes[i] = byte(i)
 	}
 	return bc
 }
 
 func (b byteClasses) alphabetLen() int {
-	return int(b[255]) + 1
+	return int(b.bytes[255]) + 1
 }
 
 func (b byteClasses) isSingleton() bool {

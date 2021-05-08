@@ -2,6 +2,7 @@ package aho_corasick
 
 import (
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -138,6 +139,12 @@ func (ac AhoCorasick) IterOverlapping(haystack string) Iter {
 	return &i
 }
 
+var pool = sync.Pool{
+	New: func() interface{} {
+		return strings.Builder{}
+	},
+}
+
 // ReplaceAllFunc replaces the matches found in the haystack according to the user provided function
 // it gives fine grained control over what is replaced.
 // A user can chose to stop the replacing process early by returning false in the lambda
@@ -159,10 +166,10 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (strin
 		replaceWith = append(replaceWith, rw)
 	}
 
-	diff := calcDiffSize(matches, replaceWith)
+	//diff := calcDiffSize(matches, replaceWith)
 
-	var str strings.Builder
-	str.Grow(len(haystack) + diff)
+	str := pool.Get().(strings.Builder)
+	defer pool.Put(str)
 
 	start := 0
 
@@ -236,6 +243,7 @@ type Opts struct {
 	AsciiCaseInsensitive bool
 	MatchOnlyWholeWords  bool
 	MatchKind            matchKind
+	DFA                  bool
 }
 
 // NewAhoCorasickBuilder creates a new AhoCorasickBuilder based on Opts
@@ -243,7 +251,7 @@ func NewAhoCorasickBuilder(o Opts) AhoCorasickBuilder {
 	return AhoCorasickBuilder{
 		dfaBuilder:          newDFABuilder(),
 		nfaBuilder:          newNFABuilder(o.MatchKind, o.AsciiCaseInsensitive),
-		dfa:                 false,
+		dfa:                 o.DFA,
 		matchOnlyWholeWords: o.MatchOnlyWholeWords,
 	}
 }

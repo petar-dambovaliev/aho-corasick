@@ -5,12 +5,37 @@ import (
 	"testing"
 )
 
+var benchmarkReplacerDFA []AhoCorasick
+
+func init() {
+	benchmarkReplacerDFA = make([]AhoCorasick, len(testCasesReplace))
+	for i, t2 := range testCasesReplace {
+		builder := NewAhoCorasickBuilder(Opts{
+			AsciiCaseInsensitive: true,
+			MatchOnlyWholeWords:  true,
+			MatchKind:            LeftMostLongestMatch,
+			DFA:                  true,
+		})
+		ac := builder.Build(t2.patterns)
+		benchmarkReplacerDFA[i] = ac
+	}
+}
+
+func BenchmarkAhoCorasick_ReplaceAllDFA(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for i, ac := range benchmarkReplacerDFA {
+			_ = ac.ReplaceAll(testCasesReplace[i].haystack, testCasesReplace[i].replaceWith)
+		}
+	}
+}
+
 func TestAhoCorasick_ReplaceAllFuncStopN(t *testing.T) {
 	for _, i2 := range testCasesReplaceN {
 		builder := NewAhoCorasickBuilder(Opts{
 			AsciiCaseInsensitive: true,
 			MatchOnlyWholeWords:  true,
 			MatchKind:            LeftMostLongestMatch,
+			DFA:                  true,
 		})
 
 		ac := builder.Build(i2.patterns)
@@ -98,10 +123,10 @@ func TestAhoCorasick_ReplaceAllFunc(t *testing.T) {
 	}
 }
 
-func BenchmarkAhoCorasick_ReplaceAll(b *testing.B) {
-	b.ResetTimer()
-	b.StopTimer()
-	acs := make([]AhoCorasick, len(testCasesReplace))
+var acsNFA []AhoCorasick
+
+func init() {
+	acsNFA = make([]AhoCorasick, len(testCasesReplace))
 	for i, t2 := range testCasesReplace {
 		builder := NewAhoCorasickBuilder(Opts{
 			AsciiCaseInsensitive: true,
@@ -109,12 +134,13 @@ func BenchmarkAhoCorasick_ReplaceAll(b *testing.B) {
 			MatchKind:            LeftMostLongestMatch,
 		})
 		ac := builder.Build(t2.patterns)
-		acs[i] = ac
+		acsNFA[i] = ac
 	}
-	b.StartTimer()
+}
 
+func BenchmarkAhoCorasick_ReplaceAllNFA(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for i, ac := range acs {
+		for i, ac := range acsNFA {
 			_ = ac.ReplaceAll(testCasesReplace[i].haystack, testCasesReplace[i].replaceWith)
 		}
 	}

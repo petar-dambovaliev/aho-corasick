@@ -69,7 +69,11 @@ func (n *iNFA) NextState(id stateID, b byte) stateID {
 }
 
 func (n *iNFA) NextStateNoFail(id stateID, b byte) stateID {
-	return nextStateNoFail(n, id, b)
+	next := n.NextState(id, b)
+	if next == failedStateID {
+		panic("automaton should never return fail_id for next state")
+	}
+	return next
 }
 
 func (n *iNFA) StandardFindAt(prefilterState *prefilterState, bytes []byte, i int, id *stateID) *Match {
@@ -223,6 +227,7 @@ func (c *compiler) calculateSize() {
 	for _, state := range c.nfa.states {
 		size += state.heapBytes()
 	}
+
 	c.nfa.heapBytes = size
 }
 
@@ -400,7 +405,7 @@ func (n *iNFA) getTwo(i stateID, j stateID) (*state, *state) {
 	return &after[0], &before[j]
 }
 
-func (n *iNFA) iterAllTransitions(byteClasses byteClasses, id stateID, f func(tr *next)) {
+func (n *iNFA) iterAllTransitions(byteClasses *byteClasses, id stateID, f func(tr *next)) {
 	n.states[id].trans.iterAll(byteClasses, f)
 }
 
@@ -644,7 +649,7 @@ type state struct {
 func (s *state) heapBytes() int {
 	var i int
 	intSize := int(unsafe.Sizeof(i))
-	return s.trans.heapBytes() + len(s.matches) + (intSize * 2)
+	return s.trans.heapBytes() + (len(s.matches) * (intSize * 2))
 }
 
 func (s *state) addMatch(patternID, patternLength int) {
@@ -697,7 +702,7 @@ func sparseIter(trans []innerSparse, f func(*next)) {
 		byte16 += 1
 	}
 
-	for b := 0; b < 256; b++ {
+	for b := byte16; b < 256; b++ {
 		f(&next{
 			key: byte(b),
 			id:  failedStateID,
@@ -705,7 +710,7 @@ func sparseIter(trans []innerSparse, f func(*next)) {
 	}
 }
 
-func (t *transitions) iterAll(byteClasses byteClasses, f func(tr *next)) {
+func (t *transitions) iterAll(byteClasses *byteClasses, f func(tr *next)) {
 	if byteClasses.isSingleton() {
 		if t.sparse != nil {
 			sparseIter(t.sparse.inner, f)
@@ -722,9 +727,11 @@ func (t *transitions) iterAll(byteClasses byteClasses, f func(tr *next)) {
 	} else {
 		if t.sparse != nil {
 			var lastClass *byte
+
 			sparseIter(t.sparse.inner, func(n *next) {
-				class := byteClasses[n.key]
-				if lastClass != nil && *lastClass != class {
+				class := byteClasses.bytes[n.key]
+
+				if lastClass == nil || *lastClass != class {
 					cc := class
 					lastClass = &cc
 					f(n)
@@ -734,12 +741,12 @@ func (t *transitions) iterAll(byteClasses byteClasses, f func(tr *next)) {
 
 		if t.dense != nil {
 			bcr := byteClassRepresentatives{
-				classes:   &byteClasses,
+				classes:   byteClasses,
 				bbyte:     0,
 				lastClass: nil,
 			}
 
-			for n := bcr.next(); n != nil; {
+			for n := bcr.next(); n != nil; n = bcr.next() {
 				f(&next{
 					key: *n,
 					id:  t.dense.inner[*n],
@@ -754,9 +761,9 @@ func (t *transitions) heapBytes() int {
 	var i int
 	intSize := int(unsafe.Sizeof(i))
 	if t.sparse != nil {
-		return len(t.sparse.inner) + 1 + intSize
+		return len(t.sparse.inner) * (2 * intSize)
 	}
-	return len(t.dense.inner) + intSize
+	return len(t.dense.inner) * intSize
 }
 
 func (t *transitions) nextState(input byte) stateID {
