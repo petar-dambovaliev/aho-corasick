@@ -29,14 +29,6 @@ func isMatchOrDeadState(a automaton, si stateID) bool {
 	return si == deadStateID || a.IsMatchState(si)
 }
 
-func nextStateNoFail(a automaton, cur stateID, input byte) stateID {
-	next := a.NextState(cur, input)
-	if next == failedStateID {
-		panic("automaton should never return fail_id for next state")
-	}
-	return next
-}
-
 func standardFindAt(a automaton, prestate *prefilterState, haystack []byte, at int, sID *stateID) *Match {
 	pre := a.Prefilter()
 	return a.StandardFindAtImp(prestate, pre, haystack, at, sID)
