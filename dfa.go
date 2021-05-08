@@ -115,17 +115,17 @@ func (d *iDFABuilder) build(nfa *iNFA) iDFA {
 		if byteClasses.isSingleton() {
 			return iDFA{&iPremultiplied{rep}}
 		} else {
-			return iDFA{&iPremultipliedByteClass{rep}}
+			return iDFA{&iPremultipliedByteClass{&rep}}
 		}
 	}
 	if byteClasses.isSingleton() {
 		return iDFA{&iStandard{rep}}
 	}
-	return iDFA{&iByteClass{rep}}
+	return iDFA{&iByteClass{&rep}}
 }
 
 type iByteClass struct {
-	repr iRepr
+	repr *iRepr
 }
 
 func (p iByteClass) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
@@ -133,7 +133,7 @@ func (p iByteClass) FindAtNoState(prefilterState *prefilterState, bytes []byte, 
 }
 
 func (p iByteClass) Repr() *iRepr {
-	return &p.repr
+	return p.repr
 }
 
 func (p iByteClass) MatchKind() *matchKind {
@@ -224,7 +224,7 @@ func (p iByteClass) FindAt(prefilterState *prefilterState, bytes []byte, i int, 
 }
 
 type iPremultipliedByteClass struct {
-	repr iRepr
+	repr *iRepr
 }
 
 func (p iPremultipliedByteClass) FindAtNoState(prefilterState *prefilterState, bytes []byte, i int) *Match {
@@ -232,7 +232,7 @@ func (p iPremultipliedByteClass) FindAtNoState(prefilterState *prefilterState, b
 }
 
 func (p iPremultipliedByteClass) Repr() *iRepr {
-	return &p.repr
+	return p.repr
 }
 
 func (p iPremultipliedByteClass) MatchKind() *matchKind {
