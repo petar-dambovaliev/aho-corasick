@@ -262,21 +262,28 @@ func TestAhoCorasick_IterOverlapping(t *testing.T) {
 
 func TestAhoCorasick_LeftmostInsensitiveWholeWord(t *testing.T) {
 	for i, t2 := range leftmostInsensitiveWholeWordTestCases {
-		builder := NewAhoCorasickBuilder(Opts{
+		builders := []AhoCorasickBuilder{NewAhoCorasickBuilder(Opts{
 			AsciiCaseInsensitive: true,
 			MatchOnlyWholeWords:  true,
 			MatchKind:            LeftMostLongestMatch,
-		})
+		}), NewAhoCorasickBuilder(Opts{
+			AsciiCaseInsensitive: true,
+			MatchOnlyWholeWords:  true,
+			MatchKind:            LeftMostLongestMatch,
+			DFA:                  true,
+		})}
 
-		ac := builder.Build(t2.patterns)
-		matches := ac.FindAll(t2.haystack)
+		for _, builder := range builders {
+			ac := builder.Build(t2.patterns)
+			matches := ac.FindAll(t2.haystack)
 
-		if len(matches) != len(t2.matches) {
-			t.Errorf("test %v expected %v matches got %v", i, len(matches), len(t2.matches))
-		}
-		for i, m := range matches {
-			if m != t2.matches[i] {
-				t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
+			if len(matches) != len(t2.matches) {
+				t.Errorf("test %v expected %v matches got %v", i, len(matches), len(t2.matches))
+			}
+			for i, m := range matches {
+				if m != t2.matches[i] {
+					t.Errorf("test %v expected %v matche got %v", i, m, t2.matches[i])
+				}
 			}
 		}
 	}
