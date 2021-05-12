@@ -34,13 +34,14 @@ Replacing of matches in the haystack.
 
 `replaceWith` needs to be the same length as the `patterns`
 ```go
-replaced := ac.ReplaceAll(haystack, replaceWith)
+r := NewReplacer(ac)
+replaced := r.ReplaceAll(haystack, replaceWith)
 ```
 
 `ReplaceAllFunc` is useful, for example, if you want to use the original text cassing but you are matching
 case insensitively. You can replace partially by return false and from that point, the original string will be preserved.
 ```go
-replaced := ac.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
+replaced := r.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
     return `<a>` + haystack[match.Start():match.End()] + `<\a>`, true
 })
 ```

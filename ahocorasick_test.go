@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-var benchmarkReplacerDFA []AhoCorasick
+var benchmarkReplacerDFA []Replacer
 
 func init() {
-	benchmarkReplacerDFA = make([]AhoCorasick, len(testCasesReplace))
+	benchmarkReplacerDFA = make([]Replacer, len(testCasesReplace))
 	for i, t2 := range testCasesReplace {
 		builder := NewAhoCorasickBuilder(Opts{
 			AsciiCaseInsensitive: true,
@@ -17,7 +17,7 @@ func init() {
 			DFA:                  true,
 		})
 		ac := builder.Build(t2.patterns)
-		benchmarkReplacerDFA[i] = ac
+		benchmarkReplacerDFA[i] = NewReplacer(ac)
 	}
 }
 
@@ -39,8 +39,9 @@ func TestAhoCorasick_ReplaceAllFuncStopN(t *testing.T) {
 		})
 
 		ac := builder.Build(i2.patterns)
+		r := NewReplacer(ac)
 		i := -1
-		replaced := ac.ReplaceAllFunc(i2.haystack, func(match Match) (string, bool) {
+		replaced := r.ReplaceAllFunc(i2.haystack, func(match Match) (string, bool) {
 			i += 1
 			return i2.replaceWith[match.pattern], i2.stopAt != i
 		})
@@ -98,7 +99,8 @@ func TestAhoCorasick_ReplaceAll(t *testing.T) {
 		})
 
 		ac := builder.Build(i2.patterns)
-		replaced := ac.ReplaceAll(i2.haystack, i2.replaceWith)
+		r := NewReplacer(ac)
+		replaced := r.ReplaceAll(i2.haystack, i2.replaceWith)
 		if replaced != i2.replaced {
 			t.Errorf("expected %v matches got %v", i2.replaced, replaced)
 		}
@@ -114,7 +116,8 @@ func TestAhoCorasick_ReplaceAllFunc(t *testing.T) {
 		})
 
 		ac := builder.Build(i2.patterns)
-		replaced := ac.ReplaceAllFunc(i2.haystack, func(match Match) (string, bool) {
+		r := NewReplacer(ac)
+		replaced := r.ReplaceAllFunc(i2.haystack, func(match Match) (string, bool) {
 			return i2.replaceWith[match.pattern], true
 		})
 		if replaced != i2.replaced {
@@ -123,10 +126,10 @@ func TestAhoCorasick_ReplaceAllFunc(t *testing.T) {
 	}
 }
 
-var acsNFA []AhoCorasick
+var acsNFA []Replacer
 
 func init() {
-	acsNFA = make([]AhoCorasick, len(testCasesReplace))
+	acsNFA = make([]Replacer, len(testCasesReplace))
 	for i, t2 := range testCasesReplace {
 		builder := NewAhoCorasickBuilder(Opts{
 			AsciiCaseInsensitive: true,
@@ -134,7 +137,7 @@ func init() {
 			MatchKind:            LeftMostLongestMatch,
 		})
 		ac := builder.Build(t2.patterns)
-		acsNFA[i] = ac
+		acsNFA[i] = NewReplacer(ac)
 	}
 }
 

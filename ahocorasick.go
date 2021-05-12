@@ -104,11 +104,18 @@ func newOverlappingIter(ac AhoCorasick, haystack string) overlappingIter {
 	}
 }
 
+// make sure the AhoCorasick data structure implements the Finder interface
+var _ Finder = (*AhoCorasick)(nil)
+
 // AhoCorasick is the main data structure that does most of the work
 type AhoCorasick struct {
 	i                   imp
 	matchKind           matchKind
 	matchOnlyWholeWords bool
+}
+
+func (ac AhoCorasick) PatternCount() int {
+	return ac.i.PatternCount()
 }
 
 // Iter gives an iterator over the built patterns
@@ -145,12 +152,20 @@ var pool = sync.Pool{
 	},
 }
 
+type Replacer struct {
+	finder Finder
+}
+
+func NewReplacer(finder Finder) Replacer {
+	return Replacer{finder: finder}
+}
+
 // ReplaceAllFunc replaces the matches found in the haystack according to the user provided function
 // it gives fine grained control over what is replaced.
 // A user can chose to stop the replacing process early by returning false in the lambda
 // In that case, everything from that point will be kept as the original haystack
-func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (string, bool)) string {
-	matches := ac.FindAll(haystack)
+func (r Replacer) ReplaceAllFunc(haystack string, f func(match Match) (string, bool)) string {
+	matches := r.finder.FindAll(haystack)
 
 	if len(matches) == 0 {
 		return haystack
@@ -194,25 +209,19 @@ func (ac AhoCorasick) ReplaceAllFunc(haystack string, f func(match Match) (strin
 
 // ReplaceAll replaces the matches found in the haystack according to the user provided slice `replaceWith`
 // It panics, if `replaceWith` has length different from the patterns that it was built with
-func (ac AhoCorasick) ReplaceAll(haystack string, replaceWith []string) string {
-	if len(replaceWith) != ac.i.PatternCount() {
+func (r Replacer) ReplaceAll(haystack string, replaceWith []string) string {
+	if len(replaceWith) != r.finder.PatternCount() {
 		panic("replaceWith needs to have the same length as the pattern count")
 	}
 
-	return ac.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
+	return r.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
 		return replaceWith[match.pattern], true
 	})
 }
 
-func calcDiffSize(matches []Match, replaceWith []string) int {
-	var diff int
-	for _, match := range matches {
-		if match.Pattern() >= len(replaceWith) {
-			return diff
-		}
-		diff += len(replaceWith[match.pattern]) - match.len
-	}
-	return diff
+type Finder interface {
+	FindAll(haystack string) []Match
+	PatternCount() int
 }
 
 // FindAll returns the matches found in the haystack
