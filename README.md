@@ -9,8 +9,15 @@ This library is heavily inspired by https://github.com/BurntSushi/aho-corasick
 
 ## Usage
 
-  ```go
-builder := NewAhoCorasickBuilder(Opts{
+```bash
+go get -u github.com/petar-dambovaliev/aho-corasick
+```
+
+```go
+import (
+    ahocorasick "github.com/petar-dambovaliev/aho-corasick"
+)
+builder := ahocorasick.NewAhoCorasickBuilder(Opts{
     AsciiCaseInsensitive: true,
     MatchOnlyWholeWords:  true,
     MatchKind:            LeftMostLongestMatch,
@@ -34,7 +41,7 @@ Replacing of matches in the haystack.
 
 `replaceWith` needs to be the same length as the `patterns`
 ```go
-r := NewReplacer(ac)
+r := ahocorasick.NewReplacer(ac)
 replaced := r.ReplaceAll(haystack, replaceWith)
 ```
 
