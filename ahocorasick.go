@@ -85,7 +85,7 @@ func (f *overlappingIter) Next() *Match {
 	return result
 }
 
-func newOverlappingIter(ac AhoCorasick, haystack string) overlappingIter {
+func newOverlappingIter(ac AhoCorasick, haystack []byte) overlappingIter {
 	prestate := prefilterState{
 		skips:       0,
 		skipped:     0,
@@ -96,7 +96,7 @@ func newOverlappingIter(ac AhoCorasick, haystack string) overlappingIter {
 	return overlappingIter{
 		fsm:                 ac.i,
 		prestate:            &prestate,
-		haystack:            []byte(haystack),
+		haystack:            haystack,
 		pos:                 0,
 		stateID:             ac.i.StartState(),
 		matchIndex:          0,
@@ -120,6 +120,11 @@ func (ac AhoCorasick) PatternCount() int {
 
 // Iter gives an iterator over the built patterns
 func (ac AhoCorasick) Iter(haystack string) Iter {
+	return ac.IterByte([]byte(haystack))
+}
+
+// IterByte gives an iterator over the built patterns
+func (ac AhoCorasick) IterByte(haystack []byte) Iter {
 	prestate := &prefilterState{
 		skips:       0,
 		skipped:     0,
@@ -131,7 +136,7 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 	return &findIter{
 		fsm:                 ac.i,
 		prestate:            prestate,
-		haystack:            []byte(haystack),
+		haystack:            haystack,
 		pos:                 0,
 		matchOnlyWholeWords: ac.matchOnlyWholeWords,
 	}
@@ -139,6 +144,11 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 
 // Iter gives an iterator over the built patterns with overlapping matches
 func (ac AhoCorasick) IterOverlapping(haystack string) Iter {
+	return ac.IterOverlappingByte([]byte(haystack))
+}
+
+// IterOverlappingByte gives an iterator over the built patterns with overlapping matches
+func (ac AhoCorasick) IterOverlappingByte(haystack []byte) Iter {
 	if ac.matchKind != StandardMatch {
 		panic("only StandardMatch allowed for overlapping matches")
 	}
@@ -269,6 +279,16 @@ func NewAhoCorasickBuilder(o Opts) AhoCorasickBuilder {
 
 // Build builds a (non)deterministic finite automata from the user provided patterns
 func (a *AhoCorasickBuilder) Build(patterns []string) AhoCorasick {
+	bytePatterns := make([][]byte, len(patterns))
+	for pati, pat := range patterns {
+		bytePatterns[pati] = []byte(pat)
+	}
+
+	return a.BuildByte(bytePatterns)
+}
+
+// BuildByte builds a (non)deterministic finite automata from the user provided patterns
+func (a *AhoCorasickBuilder) BuildByte(patterns [][]byte) AhoCorasick {
 	nfa := a.nfaBuilder.build(patterns)
 	match_kind := nfa.matchKind
 

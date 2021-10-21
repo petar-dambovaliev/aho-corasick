@@ -194,7 +194,7 @@ type compiler struct {
 	byteclassBuilder byteClassBuilder
 }
 
-func (c *compiler) compile(patterns []string) *iNFA {
+func (c *compiler) compile(patterns [][]byte) *iNFA {
 	c.addState(0)
 	c.addState(0)
 	c.addState(0)
@@ -520,7 +520,7 @@ func max(a, b int) int {
 	return b
 }
 
-func (c *compiler) buildTrie(patterns []string) {
+func (c *compiler) buildTrie(patterns [][]byte) {
 
 Patterns:
 	for pati, pat := range patterns {
@@ -529,8 +529,6 @@ Patterns:
 
 		prev := c.nfa.startID
 		sawMatch := false
-
-		pat := []byte(pat)
 
 		for depth, b := range pat {
 			sawMatch = sawMatch || c.nfa.state(prev).isMatch()
@@ -634,7 +632,7 @@ func newNFABuilder(kind matchKind, asciiCaseInsensitive bool) *iNFABuilder {
 	}
 }
 
-func (b *iNFABuilder) build(patterns []string) *iNFA {
+func (b *iNFABuilder) build(patterns [][]byte) *iNFA {
 	c := newCompiler(*b)
 	return c.compile(patterns)
 }
