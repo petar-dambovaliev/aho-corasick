@@ -231,14 +231,33 @@ func (r Replacer) ReplaceAll(haystack string, replaceWith []string) string {
 
 type Finder interface {
 	FindAll(haystack string) []Match
+	FindN(haystack string, n int) []Match
 	PatternCount() int
 }
 
 // FindAll returns the matches found in the haystack
 func (ac AhoCorasick) FindAll(haystack string) []Match {
-	iter := ac.Iter(haystack)
-	matches := make([]Match, 0)
+	return ac.FindN(haystack, -1)
+}
 
+// FindN returns the matches found in the haystack.
+//
+// The count determines the number of matches to return:
+//   n > 0: at most n matches
+//   n == 0: the result is nil (zero matches)
+//   n < 0: all matches
+func (ac AhoCorasick) FindN(haystack string, n int) []Match {
+	if n == 0 {
+		return nil
+	}
+
+	iter := ac.Iter(haystack)
+	var matches []Match
+	if n > 0 {
+		matches = make([]Match, 0, n)
+	}
+
+	i := 0
 	for {
 		next := iter.Next()
 		if next == nil {
@@ -246,6 +265,10 @@ func (ac AhoCorasick) FindAll(haystack string) []Match {
 		}
 
 		matches = append(matches, *next)
+		i++
+		if i == n {
+			break
+		}
 	}
 
 	return matches

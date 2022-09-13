@@ -369,3 +369,16 @@ func BenchmarkAhoCorasick_LeftmostInsensitiveWholeWord(b *testing.B) {
 		}
 	}
 }
+
+func TestFindN(t *testing.T) {
+	builder := NewAhoCorasickBuilder(Opts{
+		AsciiCaseInsensitive: true,
+		MatchOnlyWholeWords:  true,
+		MatchKind:            LeftMostLongestMatch,
+	})
+	ac := builder.Build([]string{"bear", "Masha"})
+	matches := ac.FindN("The Bear and Masha", 1)
+	if want, have := 1, len(matches); want != have {
+		t.Errorf("unexpected number of matches, want: %d, have: %d", want, have)
+	}
+}
