@@ -14,6 +14,24 @@ type findIter struct {
 	matchOnlyWholeWords bool
 }
 
+func newFindIter(ac AhoCorasick, haystack []byte) findIter {
+	prestate := prefilterState{
+		skips:       0,
+		skipped:     0,
+		maxMatchLen: ac.i.MaxPatternLen(),
+		inert:       false,
+		lastScanAt:  0,
+	}
+
+	return findIter{
+		fsm:                 ac.i,
+		prestate:            &prestate,
+		haystack:            haystack,
+		pos:                 0,
+		matchOnlyWholeWords: ac.matchOnlyWholeWords,
+	}
+}
+
 // Iter is an iterator over matches found on the current haystack
 // it gives the user more granular control. You can chose how many and what kind of matches you need.
 type Iter interface {
@@ -22,28 +40,29 @@ type Iter interface {
 
 // Next gives a pointer to the next match yielded by the iterator or nil, if there is none
 func (f *findIter) Next() *Match {
-	if f.pos > len(f.haystack) {
-		return nil
-	}
-
-	result := f.fsm.FindAtNoState(f.prestate, f.haystack, f.pos)
-
-	if result == nil {
-		return nil
-	}
-
-	f.pos = result.end - result.len + 1
-
-	if f.matchOnlyWholeWords {
-		if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
-			return f.Next()
+	for {
+		if f.pos > len(f.haystack) {
+			return nil
 		}
-		if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
-			return f.Next()
-		}
-	}
 
-	return result
+		result := f.fsm.FindAtNoState(f.prestate, f.haystack, f.pos)
+
+		if result == nil {
+			return nil
+		}
+
+		f.pos = result.end - result.len + 1
+
+		if f.matchOnlyWholeWords {
+			if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
+				continue
+			}
+			if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
+				continue
+			}
+		}
+		return result
+	}
 }
 
 type overlappingIter struct {
@@ -57,28 +76,30 @@ type overlappingIter struct {
 }
 
 func (f *overlappingIter) Next() *Match {
-	if f.pos > len(f.haystack) {
-		return nil
-	}
-
-	result := f.fsm.OverlappingFindAt(f.prestate, f.haystack, f.pos, &f.stateID, &f.matchIndex)
-
-	if result == nil {
-		return nil
-	}
-
-	f.pos = result.End()
-
-	if f.matchOnlyWholeWords {
-		if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
-			return f.Next()
+	for {
+		if f.pos > len(f.haystack) {
+			return nil
 		}
-		if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
-			return f.Next()
-		}
-	}
 
-	return result
+		result := f.fsm.OverlappingFindAt(f.prestate, f.haystack, f.pos, &f.stateID, &f.matchIndex)
+
+		if result == nil {
+			return nil
+		}
+
+		f.pos = result.End()
+
+		if f.matchOnlyWholeWords {
+			if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
+				continue
+			}
+			if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
+				continue
+			}
+		}
+
+		return result
+	}
 }
 
 func newOverlappingIter(ac AhoCorasick, haystack []byte) overlappingIter {
@@ -121,21 +142,8 @@ func (ac AhoCorasick) Iter(haystack string) Iter {
 
 // IterByte gives an iterator over the built patterns
 func (ac AhoCorasick) IterByte(haystack []byte) Iter {
-	prestate := &prefilterState{
-		skips:       0,
-		skipped:     0,
-		maxMatchLen: ac.i.MaxPatternLen(),
-		inert:       false,
-		lastScanAt:  0,
-	}
-
-	return &findIter{
-		fsm:                 ac.i,
-		prestate:            prestate,
-		haystack:            haystack,
-		pos:                 0,
-		matchOnlyWholeWords: ac.matchOnlyWholeWords,
-	}
+	iter := newFindIter(ac, haystack)
+	return &iter
 }
 
 // Iter gives an iterator over the built patterns with overlapping matches
@@ -171,38 +179,66 @@ func NewReplacer(finder Finder) Replacer {
 // A user can chose to stop the replacing process early by returning false in the lambda
 // In that case, everything from that point will be kept as the original haystack
 func (r Replacer) ReplaceAllFunc(haystack string, f func(match Match) (string, bool)) string {
-	matches := r.finder.FindAll(haystack)
+	return r.replaceAll(haystack, func(_ []Match) int { return -1 }, f)
+}
 
+// ReplaceAll replaces the matches found in the haystack according to the user provided slice `replaceWith`
+// It panics, if `replaceWith` has length different from the patterns that it was built with
+func (r Replacer) ReplaceAll(haystack string, replaceWith []string) string {
+	if len(replaceWith) != r.finder.PatternCount() {
+		panic("replaceWith needs to have the same length as the pattern count")
+	}
+
+	return r.replaceAll(
+		haystack,
+		func(matches []Match) int {
+			size, start := 0, 0
+			for _, m := range matches {
+				size += m.Start() - start + len(replaceWith[m.pattern])
+				start = m.Start() + m.len
+			}
+			if start-1 < len(haystack) {
+				size += len(haystack[start:])
+			}
+			return size
+		},
+		func(match Match) (string, bool) {
+			return replaceWith[match.pattern], true
+		},
+	)
+}
+
+func (r Replacer) replaceAll(haystack string, measure func(matches []Match) int, f func(match Match) (string, bool)) string {
+	matches := r.finder.FindAll(haystack)
 	if len(matches) == 0 {
 		return haystack
 	}
 
-	replaceWith := make([]string, 0)
-
-	for _, match := range matches {
-		rw, ok := f(match)
-		if !ok {
-			break
-		}
-		replaceWith = append(replaceWith, rw)
-	}
-
 	str := pool.Get().(strings.Builder)
-
 	defer func() {
 		str.Reset()
 		pool.Put(str)
 	}()
 
-	start := 0
+	// right-size the buffer
+	switch size := measure(matches); size {
+	case 0:
+		return ""
+	case -1:
+		// do nothing
+	default:
+		str.Grow(size)
+	}
 
-	for i, match := range matches {
-		if i >= len(replaceWith) {
+	start := 0
+	for _, match := range matches {
+		rw, ok := f(match)
+		if !ok {
 			str.WriteString(haystack[start:])
 			return str.String()
 		}
 		str.WriteString(haystack[start:match.Start()])
-		str.WriteString(replaceWith[i])
+		str.WriteString(rw)
 		start = match.Start() + match.len
 	}
 
@@ -213,18 +249,6 @@ func (r Replacer) ReplaceAllFunc(haystack string, f func(match Match) (string, b
 	return str.String()
 }
 
-// ReplaceAll replaces the matches found in the haystack according to the user provided slice `replaceWith`
-// It panics, if `replaceWith` has length different from the patterns that it was built with
-func (r Replacer) ReplaceAll(haystack string, replaceWith []string) string {
-	if len(replaceWith) != r.finder.PatternCount() {
-		panic("replaceWith needs to have the same length as the pattern count")
-	}
-
-	return r.ReplaceAllFunc(haystack, func(match Match) (string, bool) {
-		return replaceWith[match.pattern], true
-	})
-}
-
 type Finder interface {
 	FindAll(haystack string) []Match
 	PatternCount() int
@@ -232,9 +256,9 @@ type Finder interface {
 
 // FindAll returns the matches found in the haystack
 func (ac AhoCorasick) FindAll(haystack string) []Match {
-	iter := ac.Iter(haystack)
-	matches := make([]Match, 0)
+	iter := newFindIter(ac, []byte(haystack))
 
+	var matches []Match
 	for {
 		next := iter.Next()
 		if next == nil {
