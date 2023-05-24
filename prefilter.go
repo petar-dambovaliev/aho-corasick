@@ -10,13 +10,13 @@ type startBytesThree struct {
 	byte3 byte
 }
 
-func (s startBytesThree) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (s startBytesThree) NextCandidate(_ *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b || s.byte2 == b || s.byte3 == b {
-			return at + i, possibleStartOfMatchCandidate
+			return at + i
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (s startBytesThree) HeapBytes() int {
@@ -44,13 +44,13 @@ type startBytesTwo struct {
 	byte2 byte
 }
 
-func (s startBytesTwo) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (s startBytesTwo) NextCandidate(_ *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b || s.byte2 == b {
-			return at + i, possibleStartOfMatchCandidate
+			return at + i
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (s startBytesTwo) HeapBytes() int {
@@ -77,13 +77,13 @@ type startBytesOne struct {
 	byte1 byte
 }
 
-func (s startBytesOne) NextCandidate(_ *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (s startBytesOne) NextCandidate(_ *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if s.byte1 == b {
-			return at + i, possibleStartOfMatchCandidate
+			return at + i
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (s startBytesOne) HeapBytes() int {
@@ -192,7 +192,7 @@ type rareBytesOne struct {
 	offset rareByteOffset
 }
 
-func (r rareBytesOne) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (r rareBytesOne) NextCandidate(state *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b {
 			pos := at + i
@@ -205,10 +205,10 @@ func (r rareBytesOne) NextCandidate(state *prefilterState, haystack []byte, at i
 			if at > r {
 				r = at
 			}
-			return r, possibleStartOfMatchCandidate
+			return r
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (r rareBytesOne) HeapBytes() int {
@@ -237,7 +237,7 @@ type rareBytesTwo struct {
 	byte2   byte
 }
 
-func (r rareBytesTwo) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (r rareBytesTwo) NextCandidate(state *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b || r.byte2 == b {
 			pos := at + i
@@ -250,10 +250,10 @@ func (r rareBytesTwo) NextCandidate(state *prefilterState, haystack []byte, at i
 			if at > r {
 				r = at
 			}
-			return r, possibleStartOfMatchCandidate
+			return r
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (r rareBytesTwo) HeapBytes() int {
@@ -283,7 +283,7 @@ type rareBytesThree struct {
 	byte3   byte
 }
 
-func (r rareBytesThree) NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType) {
+func (r rareBytesThree) NextCandidate(state *prefilterState, haystack []byte, at int) int {
 	for i, b := range haystack[at:] {
 		if r.byte1 == b || r.byte2 == b || r.byte3 == b {
 			pos := at + i
@@ -296,10 +296,10 @@ func (r rareBytesThree) NextCandidate(state *prefilterState, haystack []byte, at
 			if at > r {
 				r = at
 			}
-			return r, possibleStartOfMatchCandidate
+			return r
 		}
 	}
-	return nil, noneCandidate
+	return noneCandidate
 }
 
 func (r rareBytesThree) HeapBytes() int {
@@ -568,34 +568,22 @@ func (p *prefilterState) updateSkippedBytes(skipped int) {
 	p.skipped += skipped
 }
 
-type candidateType uint
-
-const (
-	noneCandidate candidateType = iota
-	matchCandidate
-	possibleStartOfMatchCandidate
-)
+const noneCandidate = -1
 
 type prefilter interface {
-	NextCandidate(state *prefilterState, haystack []byte, at int) (interface{}, candidateType)
+	NextCandidate(state *prefilterState, haystack []byte, at int) int
 	HeapBytes() int
 	ReportsFalsePositives() bool
 	LooksForNonStartOfMatch() bool
 	clone() prefilter
 }
 
-func nextPrefilter(state *prefilterState, prefilter prefilter, haystack []byte, at int) (interface{}, candidateType) {
-	cand, ttype := prefilter.NextCandidate(state, haystack, at)
-
-	switch ttype {
-	case noneCandidate:
+func nextPrefilter(state *prefilterState, prefilter prefilter, haystack []byte, at int) int {
+	cand := prefilter.NextCandidate(state, haystack, at)
+	if cand < 0 {
 		state.updateSkippedBytes(len(haystack) - at)
-	case matchCandidate:
-		m := cand.(*Match)
-		state.updateSkippedBytes(m.Start() - at)
-	case possibleStartOfMatchCandidate:
-		i := cand.(int)
-		state.updateSkippedBytes(i - at)
+	} else {
+		state.updateSkippedBytes(cand - at)
 	}
-	return cand, ttype
+	return cand
 }
