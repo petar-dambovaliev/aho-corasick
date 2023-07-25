@@ -39,13 +39,11 @@ func standardFindAtImp(a automaton, prestate *prefilterState, prefilter prefilte
 		if prefilter != nil {
 			startState := a.StartState()
 			if prestate.IsEffective(at) && sID == &startState {
-				c, ttype := nextPrefilter(prestate, prefilter, haystack, at)
-				switch ttype {
-				case noneCandidate:
+				c := nextPrefilter(prestate, prefilter, haystack, at)
+				if c == noneCandidate {
 					return nil
-				case possibleStartOfMatchCandidate:
-					i := c.(int)
-					at = i
+				} else {
+					at = c
 				}
 			}
 		}
@@ -78,13 +76,11 @@ func leftmostFindAtImp(a automaton, prestate *prefilterState, prefilter prefilte
 		if prefilter != nil {
 			startState := a.StartState()
 			if prestate.IsEffective(at) && sID == &startState {
-				c, ttype := nextPrefilter(prestate, prefilter, haystack, at)
-				switch ttype {
-				case noneCandidate:
+				c := nextPrefilter(prestate, prefilter, haystack, at)
+				if c == noneCandidate {
 					return nil
-				case possibleStartOfMatchCandidate:
-					i := c.(int)
-					at = i
+				} else {
+					at = c
 				}
 			}
 		}
@@ -113,13 +109,9 @@ func leftmostFindAtNoStateImp(a automaton, prestate *prefilterState, prefilter p
 		return nil
 	}
 	if prefilter != nil && !prefilter.ReportsFalsePositives() {
-		c, ttype := prefilter.NextCandidate(prestate, haystack, at)
-		switch ttype {
-		case noneCandidate:
+		c := prefilter.NextCandidate(prestate, haystack, at)
+		if c == noneCandidate {
 			return nil
-		case matchCandidate:
-			m := c.(*Match)
-			return m
 		}
 	}
 
@@ -128,16 +120,11 @@ func leftmostFindAtNoStateImp(a automaton, prestate *prefilterState, prefilter p
 
 	for at < len(haystack) {
 		if prefilter != nil && prestate.IsEffective(at) && stateID == a.StartState() {
-			c, ttype := prefilter.NextCandidate(prestate, haystack, at)
-			switch ttype {
-			case noneCandidate:
+			c := prefilter.NextCandidate(prestate, haystack, at)
+			if c == noneCandidate {
 				return nil
-			case matchCandidate:
-				m := c.(*Match)
-				return m
-			case possibleStartOfMatchCandidate:
-				i := c.(int)
-				at = i
+			} else {
+				at = c
 			}
 		}
 
