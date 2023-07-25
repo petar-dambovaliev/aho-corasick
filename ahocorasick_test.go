@@ -21,6 +21,60 @@ func init() {
 	}
 }
 
+func TestOverlappingPatterns1(t *testing.T) {
+	trieBuilder := NewAhoCorasickBuilder(Opts{
+		MatchOnlyWholeWords: true,
+		MatchKind:           LeftMostLongestMatch,
+		DFA:                 false,
+	})
+
+	patterns := []string{"the foot", "football"}
+
+	trie := trieBuilder.Build(patterns)
+	result := trie.FindAll("the football")
+	if len(result) != 1 {
+		t.Logf("%v", result)
+		t.Error("Did not find match in string")
+		t.FailNow()
+	}
+}
+
+func TestOverlappingPatterns2(t *testing.T) {
+	trieBuilder := NewAhoCorasickBuilder(Opts{
+		MatchOnlyWholeWords: true,
+		MatchKind:           LeftMostLongestMatch,
+		DFA:                 false,
+	})
+
+	patterns := []string{"test _test_", "_test_1"}
+
+	trie := trieBuilder.Build(patterns)
+	result := trie.FindAll("test _test_1")
+	if len(result) != 1 {
+		t.Logf("%v", result)
+		t.Error("Did not find match in string")
+		t.FailNow()
+	}
+}
+
+func TestOverlappingPatterns3(t *testing.T) {
+	trieBuilder := NewAhoCorasickBuilder(Opts{
+		MatchOnlyWholeWords: false,
+		MatchKind:           LeftMostLongestMatch,
+		DFA:                 false,
+	})
+
+	patterns := []string{"test _test_", "_test_1"}
+
+	trie := trieBuilder.Build(patterns)
+	result := trie.FindAll("test _test_1")
+	if len(result) != 2 {
+		t.Logf("%v", result)
+		t.Error("Did not find match in string")
+		t.FailNow()
+	}
+}
+
 func BenchmarkAhoCorasick_ReplaceAllDFA(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for i, ac := range benchmarkReplacerDFA {
