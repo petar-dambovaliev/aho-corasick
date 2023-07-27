@@ -68,7 +68,25 @@ func TestOverlappingPatterns3(t *testing.T) {
 
 	trie := trieBuilder.Build(patterns)
 	result := trie.FindAll("test _test_1")
-	if len(result) != 2 {
+	if len(result) != 1 {
+		t.Logf("%v", result)
+		t.Error("Did not find match in string")
+		t.FailNow()
+	}
+}
+
+func TestOverlappingPatterns4(t *testing.T) {
+	trieBuilder := NewAhoCorasickBuilder(Opts{
+		MatchOnlyWholeWords: false,
+		MatchKind:           LeftMostFirstMatch,
+		DFA:                 false,
+	})
+
+	patterns := []string{"testing", "testing123"}
+
+	trie := trieBuilder.Build(patterns)
+	result := trie.FindAll("testing123")
+	if len(result) != 1 && result[0].end != 7 {
 		t.Logf("%v", result)
 		t.Error("Did not find match in string")
 		t.FailNow()
