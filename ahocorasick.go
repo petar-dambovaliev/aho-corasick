@@ -32,13 +32,19 @@ func (f *findIter) Next() *Match {
 		return nil
 	}
 
-	f.pos = result.end - result.len + 1
+	if result.end == f.pos {
+		f.pos += 1
+	} else {
+		f.pos = result.end
+	}
 
 	if f.matchOnlyWholeWords {
 		if result.Start()-1 >= 0 && (unicode.IsLetter(rune(f.haystack[result.Start()-1])) || unicode.IsDigit(rune(f.haystack[result.Start()-1]))) {
+			f.pos -= result.len - 1
 			return f.Next()
 		}
 		if result.end < len(f.haystack) && (unicode.IsLetter(rune(f.haystack[result.end])) || unicode.IsDigit(rune(f.haystack[result.end]))) {
+			f.pos -= result.len - 1
 			return f.Next()
 		}
 	}
