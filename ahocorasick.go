@@ -256,6 +256,22 @@ type AhoCorasickBuilder struct {
 }
 
 // Opts defines a set of options applied before the patterns are built
+// MatchOnlyWholeWords does filtering after matching with MatchKind
+// this could lead to situations where, in this case, nothing is matched
+//
+//	    trieBuilder := NewAhoCorasickBuilder(Opts{
+//		     MatchOnlyWholeWords: true,
+//		     MatchKind:           LeftMostLongestMatch,
+//		     DFA:                 false,
+//	    })
+//
+//			trie := trieBuilder.Build([]string{"testing", "testing 123"})
+//			result := trie.FindAll("testing 12345")
+//		 len(result) == 0
+//
+// this is due to the fact LeftMostLongestMatch is the matching strategy
+// "testing 123" is found but then is filtered out by MatchOnlyWholeWords
+// use MatchOnlyWholeWords with caution
 type Opts struct {
 	AsciiCaseInsensitive bool
 	MatchOnlyWholeWords  bool
